@@ -19,10 +19,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS personalizados
-st.markdown("""
-<style>
-    /* Tema principal */
+# Carregar CSS personalizado
+try:
+    with open('css/dashboard_styles.css', 'r', encoding='utf-8') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+except FileNotFoundError:
+    # CSS básico inline se arquivo não existir
+    st.markdown("""
+    <style>
     .main-header {
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
         padding: 2rem;
@@ -32,58 +36,39 @@ st.markdown("""
         text-align: center;
     }
     
-    .metric-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
+    .nubank-mode-indicator {
+        background: #f8f9fa;
+        border: 2px solid #8b2fff;
         border-radius: 10px;
-        color: white;
-        margin: 0.5rem 0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .stMetric > label {
-        color: #2c3e50 !important;
-        font-weight: bold !important;
-    }
-    
-    .warning-box {
-        padding: 1rem;
-        border-radius: 5px;
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
+        padding: 1.2rem;
         margin: 1rem 0;
     }
     
-    .success-box {
-        padding: 1rem;
-        border-radius: 5px;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        margin: 1rem 0;
+    @media (prefers-color-scheme: dark) {
+        .nubank-mode-indicator {
+            background: #1c2128;
+            color: #f0f6fc;
+        }
     }
-    
-    .info-box {
-        padding: 1rem;
-        border-radius: 5px;
-        background-color: #d1ecf1;
-        border: 1px solid #bee5eb;
-        margin: 1rem 0;
-    }
-    
-    .footer {
-        text-align: center;
-        padding: 2rem;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px;
-        margin-top: 2rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """, unsafe_allow_html=True)
+
+def detect_nubank_format(df):
+    """Detecta se o CSV é do formato Nubank (date, title, amount)"""
+    nubank_columns = ['date', 'title', 'amount']
+    return all(col in df.columns for col in nubank_columns)
 
 def detect_column_mappings(df):
     """Detecta automaticamente as colunas do CSV baseado em padrões comuns"""
     column_mapping = {}
+    
+    # Se é formato Nubank, mapear diretamente
+    if detect_nubank_format(df):
+        return {
+            'Data': 'date',
+            'Descrição': 'title', 
+            'Valor': 'amount'
+        }
     
     # Detectar coluna de data
     date_patterns = ['data', 'date', 'dt', 'timestamp', 'time']
@@ -100,7 +85,7 @@ def detect_column_mappings(df):
             break
     
     # Detectar coluna de descrição
-    desc_patterns = ['descricao', 'descrição', 'description', 'memo', 'observacao', 'observação', 'historic']
+    desc_patterns = ['descricao', 'descrição', 'description', 'memo', 'observacao', 'observação', 'historic', 'title']
     for col in df.columns:
         if any(pattern in col.lower() for pattern in desc_patterns):
             column_mapping['Descrição'] = col
@@ -124,8 +109,9 @@ def detect_column_mappings(df):
 
 @st.cache_data
 def load_csv_files():
-    """Carrega todos os CSVs da pasta especificada"""
+    """Carrega todos os CSVs da pasta especificada, com prioridade para arquivos Nubank"""
     csv_patterns = [
+        "Nubank_*.csv",  # Prioritário: arquivos Nubank
         "*.csv",
         "data/*.csv", 
         "data/raw/*.csv",
@@ -134,17 +120,29 @@ def load_csv_files():
     ]
     
     all_files = []
+    nubank_files = []
+    
     for pattern in csv_patterns:
         files = glob.glob(pattern)
         all_files.extend(files)
+        # Identificar arquivos Nubank
+        if "Nubank_" in pattern:
+            nubank_files.extend(files)
+    
+    # Remover duplicatas mantendo ordem
+    all_files = list(dict.fromkeys(all_files))
     
     if not all_files:
-        return pd.DataFrame(), []
+        return pd.DataFrame(), [], False
     
     dfs = []
     loaded_files = []
+    is_nubank_data = len(nubank_files) > 0
     
-    for file in all_files:
+    # Priorizar arquivos Nubank se existirem
+    files_to_process = nubank_files if nubank_files else all_files
+    
+    for file in files_to_process:
         try:
             # Tentar diferentes encodings
             encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252']
@@ -172,10 +170,10 @@ def load_csv_files():
     
     if dfs:
         combined_df = pd.concat(dfs, ignore_index=True)
-        return combined_df, loaded_files
-    return pd.DataFrame(), []
+        return combined_df, loaded_files, is_nubank_data
+    return pd.DataFrame(), [], False
 
-def process_financial_data(df):
+def process_financial_data(df, is_nubank_data=False):
     """Processa e limpa os dados financeiros"""
     if df.empty:
         return df
@@ -197,6 +195,10 @@ def process_financial_data(df):
         st.error(f"⚠️ **Colunas essenciais não encontradas:** {', '.join(missing_columns)}")
         st.write("**Colunas disponíveis no seu CSV:**")
         st.write(list(df.columns))
+        
+        # Mostrar primeiras linhas para debug
+        st.write("**Primeiras linhas do arquivo:**")
+        st.dataframe(df.head(3))
         st.stop()
     
     # Processar coluna de data
@@ -225,9 +227,15 @@ def process_financial_data(df):
         df_processed['Valor'] = pd.to_numeric(df_processed['Valor'], errors='coerce')
         df_processed = df_processed.dropna(subset=['Valor'])
         
-        # Classificar receitas e despesas
-        df_processed['Tipo'] = df_processed['Valor'].apply(lambda x: 'Receita' if x > 0 else 'Despesa')
-        df_processed['Valor_Absoluto'] = df_processed['Valor'].abs()
+        # Para dados Nubank, tratar diferentemente
+        if is_nubank_data:
+            # No Nubank, valores negativos são despesas, positivos são receitas/estornos
+            df_processed['Tipo'] = df_processed['Valor'].apply(lambda x: 'Receita' if x > 0 else 'Despesa')
+            df_processed['Valor_Absoluto'] = df_processed['Valor'].abs()
+        else:
+            # Dados bancários tradicionais
+            df_processed['Tipo'] = df_processed['Valor'].apply(lambda x: 'Receita' if x > 0 else 'Despesa')
+            df_processed['Valor_Absoluto'] = df_processed['Valor'].abs()
         
     except Exception as e:
         st.error(f"❌ Erro ao processar valores: {e}")
@@ -235,8 +243,8 @@ def process_financial_data(df):
     
     # Limpar descrições
     if 'Descrição' not in df_processed.columns:
-        if any(col for col in df.columns if 'desc' in col.lower()):
-            desc_col = next(col for col in df.columns if 'desc' in col.lower())
+        if any(col for col in df.columns if 'desc' in col.lower() or 'title' in col.lower()):
+            desc_col = next(col for col in df.columns if 'desc' in col.lower() or 'title' in col.lower())
             df_processed['Descrição'] = df_processed[desc_col]
         else:
             df_processed['Descrição'] = 'Sem descrição'
@@ -253,28 +261,15 @@ def process_financial_data(df):
     # Identificar custos fixos automaticamente
     df_processed = identify_fixed_costs(df_processed)
     
+    # Melhorar categorização para dados Nubank
+    if is_nubank_data:
+        df_processed = improve_nubank_categorization(df_processed)
+    
     # Remover duplicatas se existir coluna ID
     if 'ID' in df_processed.columns:
         df_processed = df_processed.drop_duplicates(subset=['ID'], keep='first')
     
     return df_processed
-
-def reprocess_as_nubank_data(df):
-    """Reprocessa dados especificamente para extratos do Nubank (só despesas)"""
-    if df.empty:
-        return df
-    
-    df_nubank = df.copy()
-    
-    # No Nubank, tudo são despesas - converter valores para absoluto e marcar como despesa
-    df_nubank['Valor_Absoluto'] = df_nubank['Valor'].abs()
-    df_nubank['Tipo'] = 'Despesa'
-    df_nubank['Valor'] = -df_nubank['Valor_Absoluto']  # Manter valores negativos para despesas
-    
-    # Melhorar a categorização automática baseada em descrições do Nubank
-    df_nubank = improve_nubank_categorization(df_nubank)
-    
-    return df_nubank
 
 def improve_nubank_categorization(df):
     """Melhora a categorização específica para dados do Nubank"""
@@ -299,7 +294,7 @@ def improve_nubank_categorization(df):
         'Saúde': [
             'FARMACIA', 'DROGARIA', 'PANVEL', 'DROGASIL', 'PACHECO', 'UNIMED',
             'MEDICO', 'HOSPITAL', 'CLINICA', 'LABORATORIO', 'DENTISTA', 'FISIOTERAPEUTA',
-            'PAGUE MENOS', 'ULTRAFARMA'
+            'PAGUE MENOS', 'ULTRAFARMA', 'Drogaria', 'DROGARIA SAO PAULO'
         ],
         'Moradia': [
             'FERREIRA IMOVEIS', 'ALUGUEL', 'CONDOMINIO', 'IPTU', 'COPEL', 'CEMIG',
@@ -312,19 +307,24 @@ def improve_nubank_categorization(df):
         ],
         'Educação': [
             'ESCOLA', 'UNIVERSIDADE', 'FACULDADE', 'COLEGIO', 'CURSO', 'MENSALIDADE',
-            'LIVROS', 'MATERIAL ESCOLAR', 'PAPELARIA', 'XEROX'
+            'LIVROS', 'MATERIAL ESCOLAR', 'PAPELARIA', 'XEROX', 'ALDEIAS INFAN', 'Aldeias'
         ],
         'Entretenimento': [
             'NETFLIX', 'SPOTIFY', 'AMAZON PRIME', 'DISNEY', 'GLOBOPLAY', 'YOUTUBE',
-            'CINEMA', 'TEATRO', 'SHOW', 'INGRESSO', 'BALADA', 'CLUBE'
+            'CINEMA', 'TEATRO', 'SHOW', 'INGRESSO', 'BALADA', 'CLUBE', 'Google'
         ],
         'Compras': [
             'MAGAZINE', 'SHOPPING', 'LOJA', 'AMERICANAS', 'SUBMARINO', 'MERCADOLIVRE',
             'AMAZON', 'ALIEXPRESS', 'SHOPEE', 'RENNER', 'C&A', 'ZARA', 'H&M'
         ],
-        'Serviços': [
-            'BANCO', 'CAIXA', 'BRADESCO', 'ITAU', 'SANTANDER', 'NUBANK',
-            'CARTORIO', 'DESPACHANTE', 'ADVOCACIA', 'CONTABILIDADE'
+        'Investimento': [
+            'Tesouro Nacional', 'TESOURO', 'INVESTIMENTO', 'APLICACAO', 'RENDA FIXA'
+        ],
+        'Transferências para terceiros': [
+            'PIX', 'TRANSFERENCIA', 'TED', 'DOC', 'Fatima Cristina', 'Sirlei da Silva'
+        ],
+        'Receitas': [
+            'CHESSFLIX', 'TREINAMENTOS', 'SALARIO', 'FREELANCE', 'RENDA', 'RECEITA'
         ]
     }
     
@@ -343,12 +343,12 @@ def identify_fixed_costs(df):
     # Padrões conhecidos de custos fixos
     fixed_patterns = {
         'Moradia': ['FERREIRA IMOVEIS', 'ALUGUEL', 'CONDOMINIO', 'IPTU', 'LUZ', 'ENERGIA', 'ÁGUA', 'AGUA', 'GAS'],
-        'Educação': ['ESCOLA', 'GREMIO NAUTICO', 'MENSALIDADE', 'UNIVERSIDADE', 'FACULDADE', 'CURSO'],
+        'Educação': ['ESCOLA', 'GREMIO NAUTICO', 'MENSALIDADE', 'UNIVERSIDADE', 'FACULDADE', 'CURSO', 'ALDEIAS'],
         'Telefone': ['CLARO', 'TIM SA', 'VIVO', 'OI', 'TELEFONE', 'CELULAR', 'INTERNET'],
         'Transferências para terceiros': ['COPE SERVICOS', 'CONTABIL', 'PIX PROGRAMADO'],
         'Saúde': ['PLANO DE SAUDE', 'UNIMED', 'BRADESCO SAUDE', 'PLANO SAUDE', 'CONVENIO'],
         'Transporte': ['SEGURO AUTO', 'IPVA', 'LICENCIAMENTO'],
-        'Entretenimento': ['NETFLIX', 'SPOTIFY', 'AMAZON PRIME', 'DISNEY', 'GLOBOPLAY']
+        'Entretenimento': ['NETFLIX', 'SPOTIFY', 'AMAZON PRIME', 'DISNEY', 'GLOBOPLAY', 'Google']
     }
     
     for categoria, patterns in fixed_patterns.items():
@@ -358,12 +358,12 @@ def identify_fixed_costs(df):
                 df.loc[mask, 'Custo_Tipo'] = 'Fixo'
                 df.loc[mask & (df['Categoria'] == 'Outros'), 'Categoria'] = categoria
     
-    # Identificar gastos recorrentes (aparecem em pelo menos 3 meses)
+    # Identificar gastos recorrentes (aparecem em pelo menos 3 períodos)
     if len(df) > 0 and 'Mes' in df.columns:
         despesas = df[df['Tipo'] == 'Despesa'].copy()
         if not despesas.empty and 'Descrição' in despesas.columns:
             freq_descriptions = despesas.groupby('Descrição')['Mes'].nunique()
-            recurring_descriptions = freq_descriptions[freq_descriptions >= 3].index
+            recurring_descriptions = freq_descriptions[freq_descriptions >= 2].index
             
             mask = df['Descrição'].isin(recurring_descriptions) & (df['Tipo'] == 'Despesa')
             df.loc[mask, 'Custo_Tipo'] = 'Fixo'
@@ -395,37 +395,71 @@ def create_monthly_analysis(df):
     
     return monthly_pivot.reset_index()
 
-def create_visualizations_nubank(df, monthly_analysis):
-    """Cria visualizações específicas para dados do Nubank (só despesas)"""
+def create_visualizations_nubank(df, monthly_analysis, is_nubank_data=False):
+    """Cria visualizações específicas para dados do Nubank ou bancários tradicionais"""
     
     if monthly_analysis.empty or df.empty:
         return None, None, None, None, None
     
-    # 1. Gráfico de despesas mensais (sem receitas)
+    # 1. Gráfico de evolução mensal
     fig_monthly = go.Figure()
     
-    if 'Despesa' in monthly_analysis.columns and monthly_analysis['Despesa'].sum() > 0:
-        fig_monthly.add_trace(go.Bar(
-            name='Despesas no Cartão',
-            x=monthly_analysis['Mes_Str'],
-            y=monthly_analysis['Despesa'],
-            marker_color='#e74c3c',
-            hovertemplate='<b>Despesas</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f}<extra></extra>'
-        ))
-        
-        # Adicionar linha de tendência
-        if len(monthly_analysis) > 1:
-            fig_monthly.add_trace(go.Scatter(
-                name='Tendência',
+    if is_nubank_data:
+        # Para Nubank, focar em despesas com receitas ocasionais
+        if 'Despesa' in monthly_analysis.columns:
+            fig_monthly.add_trace(go.Bar(
+                name='Despesas no Cartão',
                 x=monthly_analysis['Mes_Str'],
-                y=monthly_analysis['Despesa'].rolling(window=2).mean(),
-                mode='lines',
-                line=dict(color='#3498db', width=2, dash='dash'),
-                hovertemplate='<b>Média Móvel</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f}<extra></extra>'
+                y=monthly_analysis['Despesa'],
+                marker_color='#e74c3c',
+                hovertemplate='<b>Despesas</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f}<extra></extra>'
             ))
+        
+        if 'Receita' in monthly_analysis.columns and monthly_analysis['Receita'].sum() > 0:
+            fig_monthly.add_trace(go.Bar(
+                name='Receitas/Estornos',
+                x=monthly_analysis['Mes_Str'],
+                y=monthly_analysis['Receita'],
+                marker_color='#27ae60',
+                hovertemplate='<b>Receitas</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f}<extra></extra>'
+            ))
+        
+        title = '💸 Evolução Financeira - Dados Nubank'
+    else:
+        # Para dados bancários tradicionais
+        if 'Receita' in monthly_analysis.columns:
+            fig_monthly.add_trace(go.Bar(
+                name='Receitas',
+                x=monthly_analysis['Mes_Str'],
+                y=monthly_analysis['Receita'],
+                marker_color='#27ae60',
+                hovertemplate='<b>Receitas</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f}<extra></extra>'
+            ))
+        
+        if 'Despesa' in monthly_analysis.columns:
+            fig_monthly.add_trace(go.Bar(
+                name='Despesas',
+                x=monthly_analysis['Mes_Str'],
+                y=monthly_analysis['Despesa'],
+                marker_color='#e74c3c',
+                hovertemplate='<b>Despesas</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f}<extra></extra>'
+            ))
+        
+        title = '💰 Evolução de Receitas vs Despesas'
+    
+    # Adicionar linha de tendência
+    if len(monthly_analysis) > 1 and 'Despesa' in monthly_analysis.columns:
+        fig_monthly.add_trace(go.Scatter(
+            name='Tendência',
+            x=monthly_analysis['Mes_Str'],
+            y=monthly_analysis['Despesa'].rolling(window=2).mean(),
+            mode='lines',
+            line=dict(color='#3498db', width=2, dash='dash'),
+            hovertemplate='<b>Média Móvel</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f}<extra></extra>'
+        ))
     
     fig_monthly.update_layout(
-        title='💸 Evolução dos Gastos Mensais - Cartão Nubank',
+        title=title,
         xaxis_title='Mês',
         yaxis_title='Valor (R$)',
         height=500,
@@ -444,11 +478,13 @@ def create_visualizations_nubank(df, monthly_analysis):
         category_data = category_data.sort_values('Valor_Absoluto', ascending=False)
         
         if len(category_data) > 0 and category_data['Valor_Absoluto'].sum() > 0:
+            title_cat = '🏷️ Distribuição de Gastos por Categoria - Nubank' if is_nubank_data else '🏷️ Distribuição de Despesas por Categoria'
+            
             fig_category = px.pie(
                 category_data, 
                 values='Valor_Absoluto', 
                 names='Categoria',
-                title='🏷️ Distribuição de Gastos por Categoria - Cartão Nubank',
+                title=title_cat,
                 hole=0.4,
                 color_discrete_sequence=px.colors.qualitative.Set3
             )
@@ -469,12 +505,14 @@ def create_visualizations_nubank(df, monthly_analysis):
         fixed_var_data = df[df['Tipo'] == 'Despesa'].groupby(['Mes_Str', 'Custo_Tipo'])['Valor_Absoluto'].sum().reset_index()
         
         if not fixed_var_data.empty and len(fixed_var_data) > 0:
+            title_fixed = '💡 Custos Fixos vs Variáveis - Nubank' if is_nubank_data else '💡 Custos Fixos vs Variáveis'
+            
             fig_fixed_var = px.bar(
                 fixed_var_data,
                 x='Mes_Str',
                 y='Valor_Absoluto',
                 color='Custo_Tipo',
-                title='💡 Custos Fixos vs Variáveis por Mês - Cartão Nubank',
+                title=title_fixed,
                 color_discrete_map={'Fixo': '#e74c3c', 'Variável': '#3498db'},
                 labels={'Mes_Str': 'Mês', 'Valor_Absoluto': 'Valor (R$)'}
             )
@@ -497,12 +535,14 @@ def create_visualizations_nubank(df, monthly_analysis):
         ].groupby(['Mes_Str', 'Categoria'])['Valor_Absoluto'].sum().reset_index()
         
         if not trend_data.empty and len(trend_data) > 0:
+            title_trends = '📈 Tendência dos Gastos por Categoria (Top 6) - Nubank' if is_nubank_data else '📈 Tendência das Despesas por Categoria (Top 6)'
+            
             fig_trends = px.line(
                 trend_data,
                 x='Mes_Str',
                 y='Valor_Absoluto',
                 color='Categoria',
-                title='📈 Tendência dos Gastos por Categoria (Top 6) - Cartão Nubank',
+                title=title_trends,
                 markers=True,
                 labels={'Mes_Str': 'Mês', 'Valor_Absoluto': 'Valor (R$)'},
                 color_discrete_sequence=px.colors.qualitative.Set2
@@ -515,7 +555,7 @@ def create_visualizations_nubank(df, monthly_analysis):
                 paper_bgcolor='rgba(0,0,0,0)'
             )
     
-    # 5. Gauge de economia (baseado na diferença mês a mês)
+    # 5. Gauge de economia/controle
     fig_gauge = None
     if len(monthly_analysis) >= 2:
         current_expense = monthly_analysis['Despesa'].iloc[-1] if 'Despesa' in monthly_analysis.columns else 0
@@ -526,12 +566,14 @@ def create_visualizations_nubank(df, monthly_analysis):
         else:
             economy_rate = 0
         
+        gauge_title = "Controle vs Mês Anterior (%)" if is_nubank_data else "Economia vs Mês Anterior (%)"
+        
         fig_gauge = go.Figure(go.Indicator(
             mode="gauge+number+delta",
             value=economy_rate,
             delta={'reference': 0, 'valueformat': '.1f'},
             domain={'x': [0, 1], 'y': [0, 1]},
-            title={'text': "Economia vs Mês Anterior (%)", 'font': {'size': 20}},
+            title={'text': gauge_title, 'font': {'size': 20}},
             number={'font': {'size': 40}},
             gauge={
                 'axis': {'range': [-50, 50], 'tickwidth': 1, 'tickcolor': "darkblue"},
@@ -560,90 +602,148 @@ def create_visualizations_nubank(df, monthly_analysis):
     
     return fig_monthly, fig_category, fig_fixed_var, fig_trends, fig_gauge
 
-def create_financial_summary_cards_nubank(df, monthly_analysis):
-    """Cria cards de resumo financeiro específico para Nubank (só despesas)"""
+def create_financial_summary_cards(df, monthly_analysis, is_nubank_data=False):
+    """Cria cards de resumo financeiro"""
     if df.empty or monthly_analysis.empty:
         return
     
-    # Calcular métricas do último mês (só despesas)
+    # Calcular métricas do último mês
     latest_month = df['Mes_Str'].max()
     current_month_data = df[df['Mes_Str'] == latest_month]
     
-    total_despesas = current_month_data['Valor_Absoluto'].sum()
+    total_despesas = current_month_data[current_month_data['Tipo'] == 'Despesa']['Valor_Absoluto'].sum()
+    total_receitas = current_month_data[current_month_data['Tipo'] == 'Receita']['Valor_Absoluto'].sum()
     num_transacoes = len(current_month_data)
-    gasto_medio_transacao = total_despesas / num_transacoes if num_transacoes > 0 else 0
+    gasto_medio_transacao = total_despesas / len(current_month_data[current_month_data['Tipo'] == 'Despesa']) if len(current_month_data[current_month_data['Tipo'] == 'Despesa']) > 0 else 0
     
     # Custos fixos do mês
     if 'Custo_Tipo' in current_month_data.columns:
-        custos_fixos = current_month_data[current_month_data['Custo_Tipo'] == 'Fixo']['Valor_Absoluto'].sum()
-        custos_variaveis = current_month_data[current_month_data['Custo_Tipo'] == 'Variável']['Valor_Absoluto'].sum()
+        custos_fixos = current_month_data[
+            (current_month_data['Custo_Tipo'] == 'Fixo') & 
+            (current_month_data['Tipo'] == 'Despesa')
+        ]['Valor_Absoluto'].sum()
+        custos_variaveis = current_month_data[
+            (current_month_data['Custo_Tipo'] == 'Variável') & 
+            (current_month_data['Tipo'] == 'Despesa')
+        ]['Valor_Absoluto'].sum()
     else:
         custos_fixos = 0
         custos_variaveis = total_despesas
     
     # Categoria que mais gastou
-    if not current_month_data.empty:
-        categoria_top = current_month_data.groupby('Categoria')['Valor_Absoluto'].sum().idxmax()
-        valor_categoria_top = current_month_data.groupby('Categoria')['Valor_Absoluto'].sum().max()
+    despesas_mes = current_month_data[current_month_data['Tipo'] == 'Despesa']
+    if not despesas_mes.empty:
+        categoria_top = despesas_mes.groupby('Categoria')['Valor_Absoluto'].sum().idxmax()
+        valor_categoria_top = despesas_mes.groupby('Categoria')['Valor_Absoluto'].sum().max()
     else:
         categoria_top = "N/A"
         valor_categoria_top = 0
     
     # Comparação com mês anterior
     months = sorted(df['Mes_Str'].unique())
+    delta_despesas_pct = 0
     if len(months) >= 2:
         previous_month = months[-2]
         prev_month_data = df[df['Mes_Str'] == previous_month]
-        prev_despesas = prev_month_data['Valor_Absoluto'].sum()
-        delta_despesas = total_despesas - prev_despesas
-        delta_despesas_pct = (delta_despesas / prev_despesas * 100) if prev_despesas > 0 else 0
-    else:
-        delta_despesas_pct = 0
+        prev_despesas = prev_month_data[prev_month_data['Tipo'] == 'Despesa']['Valor_Absoluto'].sum()
+        if prev_despesas > 0:
+            delta_despesas = total_despesas - prev_despesas
+            delta_despesas_pct = (delta_despesas / prev_despesas * 100)
     
     # Exibir métricas
-    col1, col2, col3, col4, col5 = st.columns(5)
+    if is_nubank_data:
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric(
+                "💳 Total no Cartão",
+                f"R$ {total_despesas:,.2f}",
+                delta=f"{delta_despesas_pct:+.1f}%" if abs(delta_despesas_pct) > 0.1 else None,
+                help=f"Total gasto no cartão Nubank em {latest_month}"
+            )
+        
+        with col2:
+            st.metric(
+                "🔢 Transações",
+                f"{num_transacoes}",
+                help="Número total de transações no período"
+            )
+        
+        with col3:
+            st.metric(
+                "📊 Gasto Médio",
+                f"R$ {gasto_medio_transacao:.2f}",
+                help="Valor médio por transação no cartão"
+            )
+        
+        with col4:
+            st.metric(
+                "🔒 Custos Fixos",
+                f"R$ {custos_fixos:,.2f}",
+                delta=f"{(custos_fixos/total_despesas*100):.1f}%" if total_despesas > 0 else None,
+                help="Gastos fixos identificados no cartão"
+            )
+        
+        with col5:
+            st.metric(
+                f"🏆 {categoria_top}",
+                f"R$ {valor_categoria_top:,.2f}",
+                delta=f"{(valor_categoria_top/total_despesas*100):.1f}%" if total_despesas > 0 else None,
+                help="Categoria com maior gasto no cartão"
+            )
+        
+        # Mostrar receitas/estornos se existirem
+        if total_receitas > 0:
+            st.info(f"💰 **Receitas/Estornos no período:** R$ {total_receitas:,.2f}")
     
-    with col1:
-        st.metric(
-            "💳 Total no Cartão",
-            f"R$ {total_despesas:,.2f}",
-            delta=f"{delta_despesas_pct:+.1f}%" if abs(delta_despesas_pct) > 0.1 else None,
-            help=f"Total gasto no cartão Nubank em {latest_month}"
-        )
-    
-    with col2:
-        st.metric(
-            "🔢 Transações",
-            f"{num_transacoes}",
-            help="Número total de compras no cartão"
-        )
-    
-    with col3:
-        st.metric(
-            "📊 Gasto Médio",
-            f"R$ {gasto_medio_transacao:.2f}",
-            help="Valor médio por compra no cartão"
-        )
-    
-    with col4:
-        st.metric(
-            "🔒 Custos Fixos",
-            f"R$ {custos_fixos:,.2f}",
-            delta=f"{(custos_fixos/total_despesas*100):.1f}%" if total_despesas > 0 else None,
-            help="Gastos fixos pagos no cartão"
-        )
-    
-    with col5:
-        st.metric(
-            f"🏆 {categoria_top}",
-            f"R$ {valor_categoria_top:,.2f}",
-            delta=f"{(valor_categoria_top/total_despesas*100):.1f}%" if total_despesas > 0 else None,
-            help="Categoria com maior gasto no cartão"
-        )
+    else:
+        # Layout tradicional para dados bancários
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric(
+                "💰 Receitas",
+                f"R$ {total_receitas:,.2f}",
+                help=f"Total de receitas em {latest_month}"
+            )
+        
+        with col2:
+            st.metric(
+                "💸 Despesas",
+                f"R$ {total_despesas:,.2f}",
+                delta=f"{delta_despesas_pct:+.1f}%" if abs(delta_despesas_pct) > 0.1 else None,
+                help=f"Total de despesas em {latest_month}"
+            )
+        
+        with col3:
+            saldo = total_receitas - total_despesas
+            st.metric(
+                "💵 Saldo",
+                f"R$ {saldo:,.2f}",
+                delta="Positivo" if saldo > 0 else "Negativo",
+                help="Saldo líquido do mês"
+            )
+        
+        with col4:
+            taxa_poupanca = (saldo / total_receitas * 100) if total_receitas > 0 else 0
+            st.metric(
+                "📊 Taxa Poupança",
+                f"{taxa_poupanca:.1f}%",
+                help="Percentual poupado do total de receitas"
+            )
+        
+        with col5:
+            st.metric(
+                f"🏆 {categoria_top}",
+                f"R$ {valor_categoria_top:,.2f}",
+                delta=f"{(valor_categoria_top/total_despesas*100):.1f}%" if total_despesas > 0 else None,
+                help="Categoria com maior despesa"
+            )
 
-def show_expense_titles_analysis(df):
-    """Mostra análise detalhada dos títulos/descrições das despesas"""
-    st.subheader("🏪 Análise Detalhada dos Estabelecimentos - Cartão Nubank")
+def show_expense_titles_analysis(df, is_nubank_data=False):
+    """Mostra análise detalhada dos títulos/descrições das transações"""
+    title = "🏪 Análise Detalhada dos Estabelecimentos - Nubank" if is_nubank_data else "🏪 Análise Detalhada das Transações"
+    st.subheader(title)
     
     if df.empty:
         st.info("Nenhum dado disponível para análise.")
@@ -654,67 +754,74 @@ def show_expense_titles_analysis(df):
     
     with col1:
         unique_descriptions = df['Descrição'].nunique()
-        st.metric("🏪 Estabelecimentos Únicos", unique_descriptions)
+        label = "🏪 Estabelecimentos Únicos" if is_nubank_data else "📝 Descrições Únicas"
+        st.metric(label, unique_descriptions)
     
     with col2:
         most_frequent = df['Descrição'].mode().iloc[0] if not df['Descrição'].mode().empty else "N/A"
         frequency = df['Descrição'].value_counts().iloc[0] if len(df) > 0 else 0
-        st.metric("🔄 Mais Usado", f"{frequency}x", delta=most_frequent[:20] + "..." if len(most_frequent) > 20 else most_frequent)
+        st.metric("🔄 Mais Frequente", f"{frequency}x", delta=most_frequent[:20] + "..." if len(most_frequent) > 20 else most_frequent)
     
     with col3:
         avg_per_establishment = df.groupby('Descrição')['Valor_Absoluto'].mean().mean()
-        st.metric("💰 Gasto Médio por Local", f"R$ {avg_per_establishment:.2f}")
+        label = "💰 Gasto Médio por Local" if is_nubank_data else "💰 Valor Médio por Descrição"
+        st.metric(label, f"R$ {avg_per_establishment:.2f}")
     
     # Análise por frequência
-    st.markdown("#### 🔄 Estabelecimentos por Frequência de Uso do Cartão")
+    freq_title = "🔄 Estabelecimentos por Frequência" if is_nubank_data else "🔄 Transações por Frequência"
+    st.markdown(f"#### {freq_title}")
     
     frequency_analysis = df.groupby('Descrição').agg({
         'Valor_Absoluto': ['sum', 'mean', 'count'],
         'Data': ['min', 'max']
     }).round(2)
     
-    frequency_analysis.columns = ['Total_Gasto', 'Gasto_Medio', 'Frequencia', 'Primeira_Compra', 'Ultima_Compra']
+    frequency_analysis.columns = ['Total_Gasto', 'Gasto_Medio', 'Frequencia', 'Primeira_Transacao', 'Ultima_Transacao']
     frequency_analysis = frequency_analysis.sort_values('Frequencia', ascending=False)
     
     # Top 20 mais frequentes
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("##### 🏆 Top 10 - Mais Usados no Cartão")
+        freq_label = "🏆 Top 10 - Mais Frequentes" if is_nubank_data else "🏆 Top 10 - Mais Usados"
+        st.markdown(f"##### {freq_label}")
         top_frequent = frequency_analysis.head(10)
         
         for idx, (desc, row) in enumerate(top_frequent.iterrows(), 1):
             with st.expander(f"{idx}. {desc} ({int(row['Frequencia'])}x)"):
-                st.write(f"💳 **Total no cartão:** R$ {row['Total_Gasto']:,.2f}")
+                st.write(f"💳 **Total:** R$ {row['Total_Gasto']:,.2f}")
                 st.write(f"📊 **Gasto médio:** R$ {row['Gasto_Medio']:,.2f}")
-                st.write(f"📅 **Primeira compra:** {row['Primeira_Compra'].strftime('%d/%m/%Y')}")
-                st.write(f"📅 **Última compra:** {row['Ultima_Compra'].strftime('%d/%m/%Y')}")
+                st.write(f"📅 **Primeira:** {row['Primeira_Transacao'].strftime('%d/%m/%Y')}")
+                st.write(f"📅 **Última:** {row['Ultima_Transacao'].strftime('%d/%m/%Y')}")
                 
                 # Calcular frequência mensal
-                dias_periodo = (row['Ultima_Compra'] - row['Primeira_Compra']).days
+                dias_periodo = (row['Ultima_Transacao'] - row['Primeira_Transacao']).days
                 if dias_periodo > 0:
                     freq_mensal = (row['Frequencia'] / dias_periodo) * 30
                     st.write(f"📈 **Frequência estimada:** {freq_mensal:.1f}x por mês")
     
     with col2:
-        st.markdown("##### 💸 Top 10 - Maiores Gastos no Cartão")
+        expense_label = "💸 Top 10 - Maiores Gastos" if is_nubank_data else "💸 Top 10 - Maiores Valores"
+        st.markdown(f"##### {expense_label}")
         top_expensive = frequency_analysis.sort_values('Total_Gasto', ascending=False).head(10)
         
         for idx, (desc, row) in enumerate(top_expensive.iterrows(), 1):
             with st.expander(f"{idx}. {desc} (R$ {row['Total_Gasto']:,.2f})"):
-                st.write(f"🔄 **Usado:** {int(row['Frequencia'])}x no cartão")
+                st.write(f"🔄 **Frequência:** {int(row['Frequencia'])}x")
                 st.write(f"📊 **Gasto médio:** R$ {row['Gasto_Medio']:,.2f}")
-                st.write(f"📅 **Primeira compra:** {row['Primeira_Compra'].strftime('%d/%m/%Y')}")
-                st.write(f"📅 **Última compra:** {row['Ultima_Compra'].strftime('%d/%m/%Y')}")
+                st.write(f"📅 **Primeira:** {row['Primeira_Transacao'].strftime('%d/%m/%Y')}")
+                st.write(f"📅 **Última:** {row['Ultima_Transacao'].strftime('%d/%m/%Y')}")
                 
                 # Percentual do total
                 total_geral = df['Valor_Absoluto'].sum()
                 percentual = (row['Total_Gasto'] / total_geral) * 100
-                st.write(f"📊 **Representa:** {percentual:.1f}% do total gasto no cartão")
+                st.write(f"📊 **Representa:** {percentual:.1f}% do total")
     
     # Busca por estabelecimento
-    st.markdown("#### 🔍 Buscar Estabelecimento Específico")
-    search_term = st.text_input("Digite o nome do estabelecimento:", placeholder="Ex: SUPERMERCADO, POSTO, RESTAURANTE")
+    search_label = "🔍 Buscar Estabelecimento" if is_nubank_data else "🔍 Buscar Transação"
+    st.markdown(f"#### {search_label}")
+    search_placeholder = "Ex: SUPERMERCADO, POSTO, RESTAURANTE" if is_nubank_data else "Ex: MERCADO, FARMACIA, TRANSFERENCIA"
+    search_term = st.text_input("Digite o termo para buscar:", placeholder=search_placeholder)
     
     if search_term:
         filtered_descriptions = df[df['Descrição'].str.contains(search_term, case=False, na=False)]
@@ -725,10 +832,10 @@ def show_expense_titles_analysis(df):
                 'Data': ['min', 'max']
             }).round(2)
             
-            search_results.columns = ['Total_Gasto', 'Gasto_Medio', 'Frequencia', 'Primeira_Compra', 'Ultima_Compra']
+            search_results.columns = ['Total_Gasto', 'Gasto_Medio', 'Frequencia', 'Primeira_Transacao', 'Ultima_Transacao']
             search_results = search_results.sort_values('Total_Gasto', ascending=False)
             
-            st.write(f"🎯 **Encontrados {len(search_results)} estabelecimentos com '{search_term}'**")
+            st.write(f"🎯 **Encontrados {len(search_results)} resultados com '{search_term}'**")
             
             for desc, row in search_results.iterrows():
                 st.write(f"**{desc}**")
@@ -740,13 +847,13 @@ def show_expense_titles_analysis(df):
                 with col3:
                     st.metric("🔄 Vezes", f"{int(row['Frequencia'])}")
                 with col4:
-                    st.metric("📅 Período", f"{row['Primeira_Compra'].strftime('%m/%Y')} - {row['Ultima_Compra'].strftime('%m/%Y')}")
+                    st.metric("📅 Período", f"{row['Primeira_Transacao'].strftime('%m/%Y')} - {row['Ultima_Transacao'].strftime('%m/%Y')}")
                 st.markdown("---")
         else:
-            st.info(f"Nenhum estabelecimento encontrado com '{search_term}' nos seus gastos do cartão")
+            st.info(f"Nenhum resultado encontrado com '{search_term}'")
     
     # Lista completa com filtros
-    st.markdown("#### 📋 Lista Completa de Estabelecimentos")
+    st.markdown("#### 📋 Lista Completa")
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -780,8 +887,8 @@ def show_expense_titles_analysis(df):
             'Total_Gasto': 'R$ {:.2f}',
             'Gasto_Medio': 'R$ {:.2f}',
             'Frequencia': '{:.0f}',
-            'Primeira_Compra': lambda x: x.strftime('%d/%m/%Y'),
-            'Ultima_Compra': lambda x: x.strftime('%d/%m/%Y')
+            'Primeira_Transacao': lambda x: x.strftime('%d/%m/%Y'),
+            'Ultima_Transacao': lambda x: x.strftime('%d/%m/%Y')
         }),
         use_container_width=True,
         height=400
@@ -789,13 +896,6 @@ def show_expense_titles_analysis(df):
 
 def main():
     """Função principal do dashboard"""
-    
-    # DEFINIR PROCESSING_MODE LOGO NO INÍCIO
-    processing_mode = st.sidebar.selectbox(
-        "📱 Tipo de Extrato",
-        options=["Nubank (Só Despesas)", "Banco Tradicional (Receitas + Despesas)"],
-        help="Nubank: trata tudo como despesa\nBanco Tradicional: usa sinais +/- para classificar"
-    )
     
     # Header principal
     st.markdown("""
@@ -805,60 +905,46 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Alerta sobre o modo ativo
-    if processing_mode == "Nubank (Só Despesas)":
-        st.markdown("""
-        <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 1rem; border-radius: 5px; margin: 1rem 0;">
-        <h4>💳 Modo Cartão Nubank Ativo</h4>
-        <p><strong>Todas as transações estão sendo tratadas como DESPESAS do cartão</strong>, pois no extrato do cartão Nubank só aparecem os <strong>gastos/compras</strong> que você fez, nunca receitas.</p>
-        <ul>
-            <li>🏪 <strong>Análise de estabelecimentos</strong> - Onde você mais usa o cartão</li>
-            <li>🔄 <strong>Frequência de compras</strong> - Quantas vezes comprou em cada lugar</li>
-            <li>💡 <strong>Categorização inteligente</strong> - Baseada em padrões do Nubank</li>
-            <li>📊 <strong>Gauge de economia</strong> - Comparação com mês anterior</li>
-        </ul>
-        <p><em>Para analisar conta corrente completa (receitas + despesas), mude para 'Banco Tradicional'.</em></p>
-        </div>
-        """, unsafe_allow_html=True)
-    
     # Sidebar para configurações
     st.sidebar.title("⚙️ Configurações")
     st.sidebar.markdown("### 📁 Status dos Arquivos")
     
     # Carregar dados
     with st.spinner("🔄 Carregando dados..."):
-        df, loaded_files = load_csv_files()
+        df, loaded_files, is_nubank_data = load_csv_files()
     
     if df.empty:
         st.error("⚠️ **Nenhum dado encontrado!**")
         
         st.markdown("""
         <div class="warning-box">
-        <h4>📋 Como adicionar dados do seu cartão Nubank:</h4>
+        <h4>📋 Como adicionar dados:</h4>
         <ol>
-        <li><strong>Baixe o extrato do cartão no app/site do Nubank</strong></li>
-        <li><strong>Salve o arquivo CSV em uma das pastas:</strong></li>
+        <li><strong>Para dados do Nubank:</strong></li>
+        <ul>
+            <li>Baixe o extrato do cartão no app/site do Nubank</li>
+            <li>Salve como <code>Nubank_YYYYMMDD.csv</code></li>
+            <li>Formato esperado: <code>date, title, amount</code></li>
+        </ul>
+        <li><strong>Para dados bancários tradicionais:</strong></li>
+        <ul>
+            <li>Exporte extratos em CSV</li>
+            <li>Formato esperado: <code>Data, Descrição, Valor</code></li>
+        </ul>
+        <li><strong>Coloque os arquivos em:</strong></li>
         <ul>
             <li>Pasta atual (raiz do projeto)</li>
             <li><code>data/raw/</code></li>
             <li><code>extratos/</code></li>
-            <li><code>uploads/</code></li>
         </ul>
         <li><strong>Atualize a página (F5)</strong></li>
         </ol>
-        
-        <h4>📄 Formato do extrato Nubank:</h4>
-        <ul>
-            <li><strong>Todas as linhas são gastos</strong> (compras no cartão)</li>
-            <li><strong>Colunas esperadas:</strong> Data, Valor, Descrição</li>
-            <li><strong>Não há receitas</strong> no extrato do cartão</li>
-        </ul>
         </div>
         """, unsafe_allow_html=True)
         
         # Upload de arquivo
-        st.markdown("### 📤 Upload de Extrato do Cartão")
-        uploaded_file = st.file_uploader("Escolha o arquivo CSV do Nubank", type="csv")
+        st.markdown("### 📤 Upload de Extrato")
+        uploaded_file = st.file_uploader("Escolha o arquivo CSV", type="csv")
         
         if uploaded_file is not None:
             try:
@@ -877,15 +963,25 @@ def main():
         
         return
     
+    # Detectar tipo de dados e mostrar indicador
+    if is_nubank_data:
+        st.markdown("""
+        <div class="nubank-mode-indicator">
+        <h4>💳 Dados Nubank Detectados</h4>
+        <p><strong>Processamento otimizado para dados do cartão Nubank:</strong></p>
+        <ul>
+            <li>🏪 <strong>Análise de estabelecimentos</strong> - Onde você mais usa o cartão</li>
+            <li>🔄 <strong>Frequência de compras</strong> - Quantas vezes comprou em cada lugar</li>
+            <li>💡 <strong>Categorização inteligente</strong> - Baseada em padrões do Nubank</li>
+            <li>📊 <strong>Controle de gastos</strong> - Comparação entre períodos</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
     # Processar dados
-    with st.spinner("🔧 Processando dados do cartão..."):
+    with st.spinner("🔧 Processando dados financeiros..."):
         try:
-            df = process_financial_data(df)
-            
-            # Aplicar modo específico se for Nubank
-            if processing_mode == "Nubank (Só Despesas)":
-                df = reprocess_as_nubank_data(df)
-                
+            df = process_financial_data(df, is_nubank_data)
         except Exception as e:
             st.error(f"❌ Erro ao processar dados: {e}")
             st.write("**Detalhes do erro:**")
@@ -901,17 +997,16 @@ def main():
     st.sidebar.info(f"📅 **Período:** {df['Data'].min().date()} até {df['Data'].max().date()}")
     st.sidebar.info(f"📁 **Arquivos:** {len(loaded_files)}")
     
-    # Informações sobre o modo selecionado
-    if processing_mode == "Nubank (Só Despesas)":
+    if is_nubank_data:
         st.sidebar.markdown("""
         <div style="background-color: #e8f4fd; padding: 1rem; border-radius: 5px; margin: 1rem 0;">
-        <h4>💳 Modo Cartão Nubank</h4>
+        <h4>💳 Modo Nubank Ativo</h4>
         <p><strong>Características:</strong></p>
         <ul>
-            <li>✅ Todas as transações = despesas do cartão</li>
+            <li>✅ Dados do cartão Nubank</li>
             <li>✅ Análise de estabelecimentos</li>
             <li>✅ Frequência de uso por local</li>
-            <li>✅ Gauge de economia mensal</li>
+            <li>✅ Categorização otimizada</li>
         </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -973,27 +1068,31 @@ def main():
     
     # Cards de resumo financeiro
     if not filtered_df.empty and not monthly_analysis_filtered.empty:
-        create_financial_summary_cards_nubank(filtered_df, monthly_analysis_filtered)
+        create_financial_summary_cards(filtered_df, monthly_analysis_filtered, is_nubank_data)
     
     st.markdown("---")
     
     # Criar visualizações
     if not monthly_analysis_filtered.empty:
         try:
-            fig_monthly, fig_category, fig_fixed_var, fig_trends, fig_gauge = create_visualizations_nubank(filtered_df, monthly_analysis_filtered)
+            fig_monthly, fig_category, fig_fixed_var, fig_trends, fig_gauge = create_visualizations_nubank(
+                filtered_df, monthly_analysis_filtered, is_nubank_data
+            )
         except Exception as e:
             st.error(f"❌ Erro ao criar visualizações: {e}")
             fig_monthly = fig_category = fig_fixed_var = fig_trends = fig_gauge = None
         
-        # Tabs específicas para Nubank
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        # Tabs organizadas
+        tab_names = [
             "📊 Visão Geral", 
             "💡 Custos Fixos vs Variáveis", 
             "📈 Tendências", 
-            "🏪 Estabelecimentos",  # Aba específica para análise de onde gasta
+            "🏪 Estabelecimentos" if is_nubank_data else "📝 Detalhes",
             "📋 Dados Brutos",
             "📊 Relatórios"
-        ])
+        ]
+        
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(tab_names)
         
         # Tab 1 - Visão Geral
         with tab1:
@@ -1020,7 +1119,7 @@ def main():
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    st.subheader("🔒 Custos Fixos Pagos no Cartão")
+                    st.subheader("🔒 Custos Fixos Identificados")
                     if 'Custo_Tipo' in filtered_df.columns:
                         fixed_expenses = filtered_df[
                             filtered_df['Custo_Tipo'] == 'Fixo'
@@ -1032,12 +1131,13 @@ def main():
                                 use_container_width=True
                             )
                         else:
-                            st.info("Nenhum custo fixo identificado no cartão")
+                            st.info("Nenhum custo fixo identificado")
                 
                 with col2:
                     st.subheader("📊 Distribuição dos Gastos")
                     if 'Custo_Tipo' in filtered_df.columns:
-                        summary = filtered_df.groupby('Custo_Tipo')['Valor_Absoluto'].agg(['sum', 'mean', 'count'])
+                        despesas_only = filtered_df[filtered_df['Tipo'] == 'Despesa']
+                        summary = despesas_only.groupby('Custo_Tipo')['Valor_Absoluto'].agg(['sum', 'mean', 'count'])
                         summary.columns = ['Total', 'Média', 'Quantidade']
                         st.dataframe(
                             summary.style.format({
@@ -1055,9 +1155,12 @@ def main():
             if fig_trends is not None:
                 st.plotly_chart(fig_trends, use_container_width=True, key="trends_chart")
             
-            # Top gastos no cartão
-            st.subheader("🔝 Maiores Gastos no Cartão do Período")
-            top_expenses = filtered_df.nlargest(15, 'Valor_Absoluto')
+            # Top gastos
+            top_label = "🔝 Maiores Gastos do Período" if is_nubank_data else "🔝 Maiores Transações do Período"
+            st.subheader(top_label)
+            
+            despesas_filtered = filtered_df[filtered_df['Tipo'] == 'Despesa']
+            top_expenses = despesas_filtered.nlargest(15, 'Valor_Absoluto')
             
             if not top_expenses.empty:
                 display_cols = ['Data', 'Descrição', 'Categoria', 'Valor_Absoluto']
@@ -1072,13 +1175,14 @@ def main():
                     use_container_width=True
                 )
         
-        # Tab 4 - Estabelecimentos (específica do Nubank)
+        # Tab 4 - Estabelecimentos/Detalhes
         with tab4:
-            show_expense_titles_analysis(filtered_df)
+            show_expense_titles_analysis(filtered_df, is_nubank_data)
         
         # Tab 5 - Dados Brutos
         with tab5:
-            st.subheader("📋 Dados Completos do Cartão Nubank")
+            data_title = "📋 Dados Completos do Nubank" if is_nubank_data else "📋 Dados Completos"
+            st.subheader(data_title)
             
             # Opções de visualização
             col1, col2, col3 = st.columns(3)
@@ -1104,7 +1208,7 @@ def main():
                 display_df = display_df.sort_values(sort_by)
             
             # Exibir
-            cols_to_show = ['Data', 'Descrição', 'Categoria', 'Valor_Absoluto']
+            cols_to_show = ['Data', 'Descrição', 'Categoria', 'Valor_Absoluto', 'Tipo']
             if 'Custo_Tipo' in display_df.columns:
                 cols_to_show.append('Custo_Tipo')
             
@@ -1119,77 +1223,84 @@ def main():
             
             # Botão de download
             csv = filtered_df.to_csv(index=False)
+            file_prefix = "dados_nubank" if is_nubank_data else "dados_financeiros"
             st.download_button(
-                label="📥 Baixar dados do cartão (CSV)",
+                label="📥 Baixar dados (CSV)",
                 data=csv,
-                file_name=f"gastos_cartao_nubank_{datetime.now().strftime('%Y%m%d')}.csv",
+                file_name=f"{file_prefix}_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv"
             )
         
         # Tab 6 - Relatórios
         with tab6:
-            st.subheader("📊 Relatórios do Cartão Nubank")
+            report_title = "📊 Relatórios Nubank" if is_nubank_data else "📊 Relatórios Financeiros"
+            st.subheader(report_title)
             
-            report_type = st.selectbox(
-                "Tipo de Relatório",
-                ["Mensal Detalhado", "Por Categoria", "Estabelecimentos Frequentes", "Custos Fixos"]
-            )
+            report_options = ["Mensal Detalhado", "Por Categoria", "Estabelecimentos Frequentes", "Custos Fixos"] if is_nubank_data else \
+                           ["Mensal Detalhado", "Por Categoria", "Transações Frequentes", "Custos Fixos"]
+            
+            report_type = st.selectbox("Tipo de Relatório", report_options)
             
             if st.button("📄 Gerar Relatório"):
                 if report_type == "Mensal Detalhado":
-                    st.write("### 📊 Relatório Mensal - Cartão Nubank")
+                    st.write(f"### 📊 Relatório Mensal - {('Nubank' if is_nubank_data else 'Financeiro')}")
                     
                     for _, row in monthly_analysis_filtered.iterrows():
                         st.write(f"**Mês: {row['Mes_Str']}**")
-                        st.write(f"- Total gasto no cartão: R$ {row.get('Despesa', 0):,.2f}")
+                        
+                        if 'Despesa' in row:
+                            st.write(f"- Total despesas: R$ {row['Despesa']:,.2f}")
+                        if 'Receita' in row and row['Receita'] > 0:
+                            st.write(f"- Total receitas: R$ {row['Receita']:,.2f}")
+                        if 'Saldo' in row:
+                            st.write(f"- Saldo: R$ {row['Saldo']:,.2f}")
                         
                         # Calcular número de transações no mês
                         month_transactions = filtered_df[filtered_df['Mes_Str'] == row['Mes_Str']]
-                        st.write(f"- Compras realizadas: {len(month_transactions)}")
-                        if len(month_transactions) > 0:
-                            st.write(f"- Gasto médio por compra: R$ {row.get('Despesa', 0)/len(month_transactions):,.2f}")
+                        st.write(f"- Transações: {len(month_transactions)}")
                         st.write("---")
                 
-                elif report_type == "Estabelecimentos Frequentes":
-                    st.write("### 🏪 Relatório de Estabelecimentos - Cartão Nubank")
+                elif report_type in ["Estabelecimentos Frequentes", "Transações Frequentes"]:
+                    st.write(f"### 🏪 Relatório de {report_type}")
                     
                     establishment_report = filtered_df.groupby('Descrição').agg({
                         'Valor_Absoluto': ['sum', 'mean', 'count'],
                         'Data': ['min', 'max']
                     }).round(2)
                     
-                    establishment_report.columns = ['Total_Gasto', 'Gasto_Medio', 'Frequencia', 'Primeira_Compra', 'Ultima_Compra']
+                    establishment_report.columns = ['Total_Gasto', 'Gasto_Medio', 'Frequencia', 'Primeira_Transacao', 'Ultima_Transacao']
                     establishment_report = establishment_report.sort_values('Frequencia', ascending=False).head(20)
                     
                     for desc, row in establishment_report.iterrows():
                         st.write(f"**{desc}**")
-                        st.write(f"- Compras no cartão: {int(row['Frequencia'])} vezes")
-                        st.write(f"- Total gasto: R$ {row['Total_Gasto']:,.2f}")
-                        st.write(f"- Gasto médio por compra: R$ {row['Gasto_Medio']:,.2f}")
-                        st.write(f"- Primeira compra: {row['Primeira_Compra'].strftime('%d/%m/%Y')}")
-                        st.write(f"- Última compra: {row['Ultima_Compra'].strftime('%d/%m/%Y')}")
+                        st.write(f"- Frequência: {int(row['Frequencia'])} vezes")
+                        st.write(f"- Total: R$ {row['Total_Gasto']:,.2f}")
+                        st.write(f"- Gasto médio: R$ {row['Gasto_Medio']:,.2f}")
+                        st.write(f"- Período: {row['Primeira_Transacao'].strftime('%d/%m/%Y')} até {row['Ultima_Transacao'].strftime('%d/%m/%Y')}")
                         st.write("---")
                 
                 elif report_type == "Por Categoria":
-                    st.write("### 🏷️ Relatório por Categoria - Cartão Nubank")
+                    st.write("### 🏷️ Relatório por Categoria")
                     
-                    category_report = filtered_df.groupby('Categoria').agg({
+                    despesas_filtered = filtered_df[filtered_df['Tipo'] == 'Despesa']
+                    category_report = despesas_filtered.groupby('Categoria').agg({
                         'Valor_Absoluto': ['sum', 'mean', 'count'],
                         'Data': ['min', 'max']
                     }).round(2)
                     
                     for categoria in category_report.index:
                         st.write(f"**{categoria}**")
-                        st.write(f"- Total no cartão: R$ {category_report.loc[categoria, ('Valor_Absoluto', 'sum')]:,.2f}")
+                        st.write(f"- Total: R$ {category_report.loc[categoria, ('Valor_Absoluto', 'sum')]:,.2f}")
                         st.write(f"- Gasto médio: R$ {category_report.loc[categoria, ('Valor_Absoluto', 'mean')]:,.2f}")
-                        st.write(f"- Número de compras: {category_report.loc[categoria, ('Valor_Absoluto', 'count')]:.0f}")
+                        st.write(f"- Número de transações: {category_report.loc[categoria, ('Valor_Absoluto', 'count')]:.0f}")
                         st.write("---")
                 
                 # Botão para exportar relatório
+                report_content = f"Relatório {report_type} - {'Nubank' if is_nubank_data else 'Financeiro'}\nGerado em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
                 st.download_button(
                     label="📥 Baixar Relatório (TXT)",
-                    data=f"Relatório {report_type} - Cartão Nubank\nGerado em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
-                    file_name=f"relatorio_cartao_nubank_{report_type.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.txt",
+                    data=report_content,
+                    file_name=f"relatorio_{report_type.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.txt",
                     mime="text/plain"
                 )
     
@@ -1197,11 +1308,12 @@ def main():
         st.warning("⚠️ Não foi possível gerar as visualizações. Verifique se há dados suficientes.")
     
     # Footer
-    st.markdown("""
+    footer_text = "💳 Dashboard Nubank" if is_nubank_data else "💰 Dashboard Financeiro"
+    st.markdown(f"""
     <div class="footer">
-        <h3>💳 Dashboard Cartão Nubank</h3>
-        <p>Análise especializada para extratos do cartão Nubank | 🔒 Dados processados localmente</p>
-        <p>Versão 3.0 - Otimizada para cartão de crédito/débito</p>
+        <h3>{footer_text}</h3>
+        <p>Análise completa e inteligente dos seus dados financeiros | 🔒 Dados processados localmente</p>
+        <p>Versão 4.0 - Otimizada para dados Nubank e bancários tradicionais</p>
     </div>
     """, unsafe_allow_html=True)
 

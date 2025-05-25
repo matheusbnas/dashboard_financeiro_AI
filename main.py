@@ -24,8 +24,8 @@ import pandas as pd
 # Adicionar pasta src ao path para imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-# ASCII Art para o header
-LOGO = """
+# ASCII Art para o header (corrigido - escapando caracteres)
+LOGO = r"""
  $$$$$$\  $$$$$$$\   $$$$$$\   $$$$$$\  $$\   $$\ $$$$$$\ $$\      $$\  $$$$$$\  
 $$  __$$\ $$  __$$\ $$  __$$\ $$  __$$\ $$ |  $$ |\_$$  _|$$$\    $$$ |$$  __$$\ 
 $$ /  \__|$$ |  $$ |$$ /  $$ |$$ /  \__|$$ |  $$ |  $$ |  $$$$\  $$$$ |$$ /  $$ |
@@ -41,16 +41,17 @@ class FinancialDashboardLauncher:
     
     def __init__(self):
         self.config_file = "config.json"
-        self.config = self.load_config()
-        self.data_stats = self.check_data_availability()
         
-        # Caminhos dos módulos na estrutura src/
+        # CORREÇÃO: Definir modules ANTES de usar
         self.modules = {
             'dashboard': 'dashboard.py',
             'categorizer': 'src/llm_categorizer.py',
             'sync': 'src/google_sheets_sync.py',
             'analytics': 'src/advanced_analytics.py'
         }
+        
+        self.config = self.load_config()
+        self.data_stats = self.check_data_availability()
     
     def load_config(self) -> dict:
         """Carrega configuração do sistema"""
@@ -103,33 +104,56 @@ class FinancialDashboardLauncher:
             "date_range": None,
             "categories_available": False,
             "folders_checked": [],
-            "modules_status": {}
+            "modules_status": {},
+            "nubank_files": 0
         }
         
         # Verificar status dos módulos
         for module_name, module_path in self.modules.items():
             stats["modules_status"][module_name] = os.path.exists(module_path)
         
-        # Procurar CSVs
+        # Procurar CSVs (incluindo padrão Nubank)
         csv_files = []
+        nubank_files = []
+        
         for folder in self.config["data_folders"]:
             if os.path.exists(folder):
                 stats["folders_checked"].append(folder)
                 folder_csvs = list(Path(folder).glob("*.csv"))
                 csv_files.extend(folder_csvs)
+                
+                # Identificar arquivos do Nubank
+                nubank_pattern = list(Path(folder).glob("Nubank_*.csv"))
+                nubank_files.extend(nubank_pattern)
         
         stats["csv_files"] = len(csv_files)
+        stats["nubank_files"] = len(nubank_files)
         
         if csv_files:
             try:
-                # Tentar carregar um arquivo para estatísticas básicas
-                sample_df = pd.read_csv(csv_files[0])
-                if 'Data' in sample_df.columns:
-                    sample_df['Data'] = pd.to_datetime(sample_df['Data'], errors='coerce')
-                    stats["date_range"] = {
-                        "start": sample_df['Data'].min(),
-                        "end": sample_df['Data'].max()
-                    }
+                # Analisar arquivo de exemplo
+                sample_file = csv_files[0]
+                
+                # Detectar se é formato Nubank
+                if any('Nubank' in str(f) for f in csv_files):
+                    # Formato Nubank: date, title, amount
+                    sample_df = pd.read_csv(sample_file)
+                    
+                    if 'date' in sample_df.columns:
+                        sample_df['date'] = pd.to_datetime(sample_df['date'], errors='coerce')
+                        stats["date_range"] = {
+                            "start": sample_df['date'].min(),
+                            "end": sample_df['date'].max()
+                        }
+                else:
+                    # Formato tradicional
+                    sample_df = pd.read_csv(sample_file)
+                    if 'Data' in sample_df.columns:
+                        sample_df['Data'] = pd.to_datetime(sample_df['Data'], errors='coerce')
+                        stats["date_range"] = {
+                            "start": sample_df['Data'].min(),
+                            "end": sample_df['Data'].max()
+                        }
                 
                 stats["total_transactions"] = len(sample_df)
                 stats["categories_available"] = 'Categoria' in sample_df.columns
@@ -152,6 +176,7 @@ class FinancialDashboardLauncher:
         # Status do sistema
         print(f"\n📊 STATUS DO SISTEMA:")
         print(f"   • Arquivos CSV encontrados: {self.data_stats['csv_files']}")
+        print(f"   • Arquivos Nubank encontrados: {self.data_stats['nubank_files']}")
         
         # Status dos módulos
         print(f"\n🔧 STATUS DOS MÓDULOS:")
@@ -181,12 +206,12 @@ class FinancialDashboardLauncher:
         print(f"   • Google Sheets: {'✅ Configurado' if self.config['google_sheets_configured'] else '❌ Não configurado'}")
         print(f"   • LLM para categorização: {'✅ ' + self.config['llm_provider'].upper() if self.config['llm_provider'] != 'local' else '❌ Apenas regras'}")
         
-        # Estrutura do projeto
-        print(f"\n📁 ESTRUTURA ORGANIZADA:")
-        print(f"   • Módulos principais: src/")
-        print(f"   • Dashboard: raiz do projeto")
-        print(f"   • Configurações: {self.config.get('project_structure', {}).get('config_folder', 'config')}/")
-        print(f"   • Estilos: {self.config.get('project_structure', {}).get('css_folder', 'css')}/")
+        # Dados Nubank
+        if self.data_stats['nubank_files'] > 0:
+            print(f"\n💳 DADOS NUBANK DETECTADOS:")
+            print(f"   • {self.data_stats['nubank_files']} arquivos Nubank_*.csv")
+            print(f"   • Formato: date, title, amount")
+            print(f"   • Processamento otimizado para cartão Nubank")
         
         # Primeira execução
         if self.config["first_run"]:
@@ -365,7 +390,16 @@ class FinancialDashboardLauncher:
                 f.write('"""Módulos principais do Dashboard Financeiro"""\n')
             print(f"  ✅ Criado: {src_init}")
         
-        # 4. Criar arquivos de configuração
+        # 4. Verificar dados Nubank
+        print(f"\n💳 Verificando dados Nubank...")
+        if self.data_stats['nubank_files'] > 0:
+            print(f"  ✅ {self.data_stats['nubank_files']} arquivos Nubank encontrados")
+            print(f"  📊 Formato: date, title, amount")
+        else:
+            print(f"  ⚠️ Nenhum arquivo Nubank_*.csv encontrado")
+            print(f"  💡 Baixe extratos do Nubank e coloque em data/raw/")
+        
+        # 5. Criar arquivos de configuração
         if not os.path.exists(".env"):
             print("\n📝 Criando arquivo .env...")
             env_content = """# Google Sheets
@@ -384,10 +418,7 @@ DEFAULT_CURRENCY=BRL
                 f.write(env_content)
             print("  ✅ Arquivo .env criado")
         
-        # 5. Resto da configuração continua igual...
-        # [código existente para Google Sheets, LLM, etc.]
-        
-        # 6. Atualizar config para refletir estrutura src/
+        # 6. Atualizar config
         self.config["first_run"] = False
         self.config["project_structure"]["modules_in_src"] = True
         self.save_config()
@@ -451,19 +482,15 @@ DEFAULT_CURRENCY=BRL
                 status = "✅" if exists else "❌"
                 print(f"   {status} {file_path}")
         
-        # Verificar se há arquivos na raiz que deveriam estar em src/
-        root_files = [f for f in os.listdir('.') if f.endswith('.py') and f not in ['main.py', 'dashboard.py']]
-        if root_files:
-            print(f"\n⚠️ Arquivos Python na raiz (considere mover para src/):")
-            for file in root_files:
-                print(f"   📄 {file}")
-        
-        print(f"\n💡 RECOMENDAÇÕES:")
-        print("   • Mantenha main.py e dashboard.py na raiz")
-        print("   • Mova módulos auxiliares para src/")
-        print("   • Use config/ para configurações")
-        print("   • Use css/ para estilos")
-        print("   • Proteja dados/ e credentials/ no .gitignore")
+        # Verificar dados Nubank
+        print(f"\n💳 DADOS NUBANK:")
+        nubank_files = list(Path(".").rglob("Nubank_*.csv"))
+        if nubank_files:
+            print(f"   ✅ {len(nubank_files)} arquivos Nubank encontrados:")
+            for f in nubank_files:
+                print(f"      📄 {f}")
+        else:
+            print(f"   ❌ Nenhum arquivo Nubank_*.csv encontrado")
         
         input("\nPressione Enter para continuar...")
     
@@ -473,6 +500,12 @@ DEFAULT_CURRENCY=BRL
         print("="*60)
         
         help_topics = [
+            ("Dados do Nubank", [
+                "📄 Formato: date, title, amount",
+                "💾 Salvar como: Nubank_YYYYMMDD.csv em data/raw/",
+                "🔧 Processamento automático para cartão Nubank",
+                "📊 Dashboard otimizado para dados de cartão"
+            ]),
             ("Estrutura do Projeto", [
                 "📁 src/ - Módulos principais (llm_categorizer, google_sheets_sync, advanced_analytics)",
                 "📄 dashboard.py - Interface principal (na raiz)",
@@ -487,12 +520,6 @@ DEFAULT_CURRENCY=BRL
                 "python src/llm_categorizer.py - Categorização",
                 "python src/google_sheets_sync.py - Sincronização",
                 "python src/advanced_analytics.py - Análise avançada"
-            ]),
-            ("Imports e Dependências", [
-                "Módulos src/ são importados automaticamente",
-                "Use 'from src.module import ...' se necessário",
-                "Dashboard pode importar de src/ diretamente",
-                "config.json mantém configurações centralizadas"
             ])
         ]
         
@@ -516,12 +543,71 @@ DEFAULT_CURRENCY=BRL
             path = self.modules[module]
             print(f"   {icon} {module}: {path}")
         
+        # Mostrar dados
+        print(f"\n💾 DADOS:")
+        print(f"   📄 CSVs totais: {self.data_stats['csv_files']}")
+        print(f"   💳 Arquivos Nubank: {self.data_stats['nubank_files']}")
+        
         if self.data_stats["csv_files"] == 0:
             print("\n📋 Para adicionar dados:")
             print("1. Baixe extratos do Nubank em CSV")
             print("2. Coloque na pasta data/raw/")
             print("3. Use 'Atualizar Status' novamente")
         
+        input("Pressione Enter para continuar...")
+    
+    def execute_config(self):
+        """Configurações do sistema"""
+        print("\n🔧 Configurações do Sistema")
+        print("="*40)
+        
+        print("1. Configurar Google Sheets API")
+        print("2. Configurar LLM (OpenAI/Groq)")
+        print("3. Configurar pastas de dados")
+        print("4. Testar conexões")
+        print("5. Voltar ao menu principal")
+        
+        choice = input("\nEscolha (1-5): ").strip()
+        
+        if choice == "1":
+            print("\n📊 Configuração Google Sheets:")
+            print("1. Acesse: https://console.cloud.google.com/")
+            print("2. Crie projeto e habilite Google Sheets API")
+            print("3. Crie Service Account e baixe JSON")
+            print("4. Salve como: credentials/google_credentials.json")
+            
+            if os.path.exists("credentials/google_credentials.json"):
+                print("✅ Credenciais encontradas!")
+                self.config["google_sheets_configured"] = True
+            else:
+                print("❌ Credenciais não encontradas")
+                
+        elif choice == "2":
+            print("\n🤖 Configuração LLM:")
+            provider = input("Provider (groq/openai): ").strip().lower()
+            
+            if provider in ['groq', 'openai']:
+                api_key = input(f"Digite a chave API do {provider.upper()}: ").strip()
+                if api_key:
+                    # Atualizar .env
+                    env_key = "GROQ_API_KEY" if provider == "groq" else "OPENAI_API_KEY"
+                    print(f"💡 Adicione ao .env: {env_key}={api_key}")
+                    self.config["llm_provider"] = provider
+                    
+        elif choice == "4":
+            print("\n🧪 Testando conexões...")
+            
+            # Testar Google Sheets
+            if os.path.exists("credentials/google_credentials.json"):
+                print("✅ Credenciais Google Sheets: OK")
+            else:
+                print("❌ Credenciais Google Sheets: Não encontradas")
+            
+            # Testar dados
+            print(f"📄 Dados CSV: {self.data_stats['csv_files']} arquivos")
+            print(f"💳 Dados Nubank: {self.data_stats['nubank_files']} arquivos")
+        
+        self.save_config()
         input("Pressione Enter para continuar...")
     
     def run(self):
@@ -563,12 +649,6 @@ DEFAULT_CURRENCY=BRL
         except Exception as e:
             print(f"\n❌ Erro inesperado: {e}")
             print("💡 Verifique se todos os módulos estão na pasta src/")
-    
-    def execute_config(self):
-        """Configurações do sistema (implementação básica)"""
-        print("\n🔧 Configurações do Sistema")
-        print("Funcionalidade em desenvolvimento...")
-        input("Pressione Enter para continuar...")
 
 def main():
     """Função principal"""
@@ -641,7 +721,9 @@ def check_system():
     # Dados
     print("\n📊 Dados:")
     csv_count = len(list(Path(".").rglob("*.csv")))
+    nubank_count = len(list(Path(".").rglob("Nubank_*.csv")))
     print(f"   📄 CSVs encontrados: {csv_count}")
+    print(f"   💳 Arquivos Nubank: {nubank_count}")
     
     # Estrutura
     print("\n📁 Estrutura:")
