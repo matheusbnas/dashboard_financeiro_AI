@@ -4,6 +4,7 @@ data/raw/*.csv
 credentials/
 *.json
 .venv/
+old_files/
 
 # Python
 __pycache__/

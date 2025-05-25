@@ -1,0 +1,558 @@
+/* ==============================================
+   DASHBOARD FINANCEIRO - ESTILOS OTIMIZADOS
+   Compatível com temas claro e escuro
+   ============================================== */
+
+/* ============= VARIÁVEIS DE CORES ============= */
+:root {
+  /* Cores principais - modo claro */
+  --primary-bg: #ffffff;
+  --secondary-bg: #f8f9fa;
+  --text-primary: #2c3e50;
+  --text-secondary: #6c757d;
+  --accent-blue: #3498db;
+  --accent-green: #27ae60;
+  --accent-red: #e74c3c;
+  --accent-orange: #f39c12;
+  --accent-purple: #8e44ad;
+  
+  /* Gradientes */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  --gradient-danger: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  --gradient-warning: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  
+  /* Bordas e sombras */
+  --border-radius: 12px;
+  --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --box-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+  
+  /* Transições */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============= MODO ESCURO ============= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-bg: #1a1a1a;
+    --secondary-bg: #2d3748;
+    --text-primary: #e2e8f0;
+    --text-secondary: #a0aec0;
+    --accent-blue: #63b3ed;
+    --accent-green: #68d391;
+    --accent-red: #fc8181;
+    --accent-orange: #fbb16c;
+    --accent-purple: #b794f6;
+    
+    --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --box-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Forçar modo escuro no Streamlit quando detectado */
+[data-theme="dark"] {
+  --primary-bg: #0e1117;
+  --secondary-bg: #1e293b;
+  --text-primary: #fafafa;
+  --text-secondary: #cbd5e0;
+}
+
+/* ============= RESET E BASE ============= */
+* {
+  box-sizing: border-box;
+}
+
+.stApp {
+  background: var(--primary-bg) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+}
+
+/* ============= HEADER PRINCIPAL ============= */
+.main-header {
+  background: var(--gradient-primary) !important;
+  padding: 2.5rem 2rem !important;
+  border-radius: var(--border-radius) !important;
+  color: white !important;
+  margin-bottom: 2rem !important;
+  text-align: center !important;
+  box-shadow: var(--box-shadow) !important;
+  transition: var(--transition) !important;
+}
+
+.main-header:hover {
+  box-shadow: var(--box-shadow-hover) !important;
+  transform: translateY(-2px) !important;
+}
+
+.main-header h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.main-header p {
+  font-size: 1.1rem !important;
+  font-weight: 400 !important;
+  opacity: 0.9 !important;
+}
+
+/* ============= CARDS E MÉTRICAS ============= */
+.metric-container {
+  background: var(--gradient-primary) !important;
+  padding: 1.8rem !important;
+  border-radius: var(--border-radius) !important;
+  color: white !important;
+  margin: 0.8rem 0 !important;
+  box-shadow: var(--box-shadow) !important;
+  transition: var(--transition) !important;
+  border: none !important;
+}
+
+.metric-container:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: var(--box-shadow-hover) !important;
+}
+
+/* Métricas do Streamlit */
+[data-testid="metric-container"] {
+  background: var(--secondary-bg) !important;
+  border: 2px solid transparent !important;
+  border-radius: var(--border-radius) !important;
+  padding: 1.5rem !important;
+  box-shadow: var(--box-shadow) !important;
+  transition: var(--transition) !important;
+}
+
+[data-testid="metric-container"]:hover {
+  border-color: var(--accent-blue) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--box-shadow-hover) !important;
+}
+
+.stMetric > label {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.stMetric [data-testid="metric-value"] {
+  color: var(--text-primary) !important;
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+}
+
+.stMetric [data-testid="metric-delta"] {
+  font-weight: 600 !important;
+}
+
+/* ============= ALERTAS E NOTIFICAÇÕES ============= */
+.success-box, .stSuccess {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%) !important;
+  border: 2px solid var(--accent-green) !important;
+  border-radius: var(--border-radius) !important;
+  padding: 1.2rem !important;
+  margin: 1rem 0 !important;
+  color: #155724 !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+.warning-box, .stWarning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
+  border: 2px solid var(--accent-orange) !important;
+  border-radius: var(--border-radius) !important;
+  padding: 1.2rem !important;
+  margin: 1rem 0 !important;
+  color: #856404 !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+.info-box, .stInfo {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%) !important;
+  border: 2px solid var(--accent-blue) !important;
+  border-radius: var(--border-radius) !important;
+  padding: 1.2rem !important;
+  margin: 1rem 0 !important;
+  color: #0c5460 !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+.stError {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%) !important;
+  border: 2px solid var(--accent-red) !important;
+  border-radius: var(--border-radius) !important;
+  padding: 1.2rem !important;
+  margin: 1rem 0 !important;
+  color: #721c24 !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+/* Modo escuro para alertas */
+@media (prefers-color-scheme: dark) {
+  .success-box, .stSuccess { 
+    background: rgba(39, 174, 96, 0.2) !important; 
+    color: var(--accent-green) !important; 
+  }
+  .warning-box, .stWarning { 
+    background: rgba(243, 156, 18, 0.2) !important; 
+    color: var(--accent-orange) !important; 
+  }
+  .info-box, .stInfo { 
+    background: rgba(52, 152, 219, 0.2) !important; 
+    color: var(--accent-blue) !important; 
+  }
+  .stError { 
+    background: rgba(231, 76, 60, 0.2) !important; 
+    color: var(--accent-red) !important; 
+  }
+}
+
+/* ============= SIDEBAR ============= */
+.stSidebar {
+  background: var(--secondary-bg) !important;
+  border-right: 2px solid var(--accent-blue) !important;
+}
+
+.stSidebar .stSelectbox label,
+.stSidebar .stMultiSelect label,
+.stSidebar .stDateInput label,
+.stSidebar .stNumberInput label {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+}
+
+/* ============= TABS ============= */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 8px !important;
+  background: var(--secondary-bg) !important;
+  border-radius: var(--border-radius) !important;
+  padding: 0.5rem !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+  border-radius: 8px !important;
+  padding: 0.8rem 1.5rem !important;
+  font-weight: 600 !important;
+  transition: var(--transition) !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+  background: var(--accent-blue) !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+}
+
+.stTabs [aria-selected="true"] {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+/* ============= TABELAS ============= */
+.stDataFrame {
+  border: none !important;
+  border-radius: var(--border-radius) !important;
+  overflow: hidden !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+.stDataFrame table {
+  background: var(--primary-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+.stDataFrame thead th {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  padding: 1rem !important;
+  text-align: left !important;
+  border: none !important;
+}
+
+.stDataFrame tbody td {
+  padding: 0.8rem 1rem !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: var(--text-primary) !important;
+}
+
+.stDataFrame tbody tr:hover {
+  background: var(--secondary-bg) !important;
+}
+
+/* ============= BOTÕES ============= */
+.stButton > button {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--border-radius) !important;
+  padding: 0.8rem 2rem !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  transition: var(--transition) !important;
+  box-shadow: var(--box-shadow) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.stButton > button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--box-shadow-hover) !important;
+  filter: brightness(110%) !important;
+}
+
+.stDownloadButton > button {
+  background: var(--accent-green) !important;
+  color: white !important;
+}
+
+/* ============= INPUTS ============= */
+.stTextInput > div > div > input,
+.stSelectbox > div > div > div,
+.stMultiSelect > div > div > div,
+.stNumberInput > div > div > input {
+  background: var(--secondary-bg) !important;
+  border: 2px solid transparent !important;
+  border-radius: 8px !important;
+  color: var(--text-primary) !important;
+  padding: 0.8rem !important;
+  transition: var(--transition) !important;
+}
+
+.stTextInput > div > div > input:focus,
+.stSelectbox > div > div > div:focus,
+.stMultiSelect > div > div > div:focus,
+.stNumberInput > div > div > input:focus {
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
+}
+
+/* ============= GRÁFICOS ============= */
+.js-plotly-plot {
+  border-radius: var(--border-radius) !important;
+  box-shadow: var(--box-shadow) !important;
+  overflow: hidden !important;
+  background: var(--primary-bg) !important;
+}
+
+/* ============= EXPANSORES ============= */
+.streamlit-expanderHeader {
+  background: var(--secondary-bg) !important;
+  border-radius: var(--border-radius) !important;
+  border: 2px solid transparent !important;
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  transition: var(--transition) !important;
+}
+
+.streamlit-expanderHeader:hover {
+  border-color: var(--accent-blue) !important;
+  background: var(--accent-blue) !important;
+  color: white !important;
+}
+
+.streamlit-expanderContent {
+  background: var(--primary-bg) !important;
+  border: 2px solid var(--secondary-bg) !important;
+  border-radius: 0 0 var(--border-radius) var(--border-radius) !important;
+  padding: 1.5rem !important;
+}
+
+/* ============= FOOTER ============= */
+.footer {
+  text-align: center !important;
+  padding: 2.5rem !important;
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  border-radius: var(--border-radius) !important;
+  margin-top: 3rem !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+.footer h3 {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.footer p {
+  font-size: 1rem !important;
+  opacity: 0.9 !important;
+  margin-bottom: 0.3rem !important;
+}
+
+/* ============= RESPONSIVIDADE ============= */
+@media (max-width: 768px) {
+  .main-header {
+    padding: 1.5rem 1rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+  
+  .main-header h1 {
+    font-size: 2rem !important;
+  }
+  
+  .metric-container {
+    padding: 1.2rem !important;
+    margin: 0.5rem 0 !important;
+  }
+  
+  .stButton > button {
+    padding: 0.6rem 1.5rem !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* ============= ANIMAÇÕES ============= */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out !important;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.5s ease-out !important;
+}
+
+/* ============= SCROLLBAR ============= */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary-bg);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-blue);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-purple);
+}
+
+/* ============= ELEMENTOS ESPECÍFICOS DO NUBANK ============= */
+.nubank-mode-indicator {
+  background: linear-gradient(135deg, #8b2fff 0%, #a459ff 100%) !important;
+  border: 2px solid #8b2fff !important;
+  border-radius: var(--border-radius) !important;
+  padding: 1.2rem !important;
+  margin: 1rem 0 !important;
+  color: white !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+.nubank-mode-indicator h4 {
+  color: white !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.establishment-card {
+  background: var(--secondary-bg) !important;
+  border: 2px solid transparent !important;
+  border-radius: var(--border-radius) !important;
+  padding: 1.2rem !important;
+  margin: 0.8rem 0 !important;
+  transition: var(--transition) !important;
+  box-shadow: var(--box-shadow) !important;
+}
+
+.establishment-card:hover {
+  border-color: var(--accent-purple) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--box-shadow-hover) !important;
+}
+
+/* ============= UTILITÁRIOS ============= */
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }
+.font-bold { font-weight: 700 !important; }
+.font-medium { font-weight: 600 !important; }
+.text-success { color: var(--accent-green) !important; }
+.text-danger { color: var(--accent-red) !important; }
+.text-warning { color: var(--accent-orange) !important; }
+.text-info { color: var(--accent-blue) !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 0.5rem !important; }
+.mb-2 { margin-bottom: 1rem !important; }
+.mb-3 { margin-bottom: 1.5rem !important; }
+
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: 0.5rem !important; }
+.mt-2 { margin-top: 1rem !important; }
+.mt-3 { margin-top: 1.5rem !important; }
+
+/* ============= AJUSTES FINAIS PARA COMPATIBILIDADE ============= */
+.element-container {
+  background: transparent !important;
+}
+
+.block-container {
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
+}
+
+/* Garantir que texto seja sempre visível */
+p, span, div, label, h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary) !important;
+}
+
+/* Override para elementos que podem ter cor fixa */
+.stMarkdown {
+  color: var(--text-primary) !important;
+}
+
+.stMarkdown h1, .stMarkdown h2, .stMarkdown h3, 
+.stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
+  color: var(--text-primary) !important;
+}
+
+.stMarkdown p {
+  color: var(--text-primary) !important;
+}
+
+/* Garantir contraste em listas */
+.stMarkdown ul li, .stMarkdown ol li {
+  color: var(--text-primary) !important;
+}
+
+.stMarkdown strong {
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+}
+
+.stMarkdown em {
+  color: var(--text-secondary) !important;
+}
