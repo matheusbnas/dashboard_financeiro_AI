@@ -5,18 +5,38 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
 import glob
+import subprocess
+import sys
 from datetime import datetime, timedelta
 import numpy as np
 import re
 from pathlib import Path
-import uuid
+import webbrowser
+
+# Importar módulos locais
+try:
+    from chatbot import render_chatbot
+    CHATBOT_AVAILABLE = True
+except ImportError:
+    CHATBOT_AVAILABLE = False
+
+try:
+    from src.google_sheets_sync import GoogleSheetsSync, quick_sync
+    GOOGLE_SHEETS_AVAILABLE = True
+except ImportError:
+    GOOGLE_SHEETS_AVAILABLE = False
 
 # Configuração da página
 st.set_page_config(
     page_title="💰 Dashboard Financeiro Avançado",
     page_icon="💰",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://github.com/seu-usuario/dashboard-financeiro',
+        'Report a bug': 'mailto:matheusbnas@gmail.com',
+        'About': "Dashboard Financeiro Avançado - Especializado em dados Nubank"
+    }
 )
 
 # Carregar CSS personalizado
@@ -28,30 +48,292 @@ except FileNotFoundError:
     st.markdown("""
     <style>
     .main-header {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 2rem;
-        border-radius: 10px;
+        border-radius: 12px;
         color: white;
         margin-bottom: 2rem;
         text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
     
-    .nubank-mode-indicator {
-        background: #f8f9fa;
-        border: 2px solid #8b2fff;
-        border-radius: 10px;
-        padding: 1.2rem;
+    .nav-menu {
+        background: var(--bg-secondary, #f8f9fa);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+        border: 2px solid var(--border-color, #dee2e6);
+    }
+    
+    .nav-button {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        margin: 0.25rem 0;
+        background: var(--bg-primary, white);
+        color: var(--text-primary, #212529);
+        border: 1px solid var(--border-color, #dee2e6);
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .nav-button:hover {
+        background: var(--accent-blue, #0066cc);
+        color: white;
+        transform: translateY(-1px);
+    }
+    
+    .google-sheets-button {
+        background: linear-gradient(135deg, #34a853 0%, #4caf50 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 20px rgba(52, 168, 83, 0.3);
+        cursor: pointer;
+        width: 100%;
         margin: 1rem 0;
     }
     
+    .nubank-mode-indicator {
+        background: linear-gradient(135deg, #8b2fff 0%, #a855f7 100%);
+        border: 2px solid #8b2fff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        color: white;
+        box-shadow: 0 4px 20px rgba(139, 47, 255, 0.3);
+    }
+    
     @media (prefers-color-scheme: dark) {
-        .nubank-mode-indicator {
-            background: #1c2128;
+        .nav-menu {
+            background: #161b22;
+            border-color: #30363d;
+        }
+        
+        .nav-button {
+            background: #0d1117;
             color: #f0f6fc;
+            border-color: #30363d;
         }
     }
     </style>
     """, unsafe_allow_html=True)
+
+def render_navigation_menu():
+    """Renderiza menu de navegação no sidebar"""
+    st.sidebar.markdown("""
+    <div class="nav-menu">
+        <h3>🧭 Navegação</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Opções de navegação
+    nav_options = {
+        "📊 Dashboard Principal": "dashboard",
+        "🤖 Assistente IA": "chatbot", 
+        "🚀 Menu Principal": "main",
+        "📈 Análise Avançada": "analytics",
+        "☁️ Google Sheets": "sheets"
+    }
+    
+    # Estado atual da navegação
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 'dashboard'
+    
+    # Criar botões de navegação
+    for label, page_key in nav_options.items():
+        is_current = st.session_state.current_page == page_key
+        
+        if st.sidebar.button(
+            label, 
+            key=f"nav_{page_key}",
+            help=f"Navegar para {label}",
+            use_container_width=True
+        ):
+            if page_key == "main":
+                # Executar main.py
+                try:
+                    subprocess.Popen([sys.executable, "main.py"])
+                    st.sidebar.success("🚀 Menu Principal aberto!")
+                except Exception as e:
+                    st.sidebar.error(f"Erro ao abrir menu principal: {e}")
+            elif page_key == "analytics":
+                # Executar análise avançada
+                try:
+                    subprocess.Popen([sys.executable, "src/advanced_analytics.py"])
+                    st.sidebar.success("📈 Análise Avançada iniciada!")
+                except Exception as e:
+                    st.sidebar.error(f"Erro ao iniciar análise: {e}")
+            elif page_key == "sheets":
+                # Executar Google Sheets sync
+                st.session_state.current_page = "sheets"
+                st.rerun()
+            else:
+                st.session_state.current_page = page_key
+                st.rerun()
+    
+    st.sidebar.markdown("---")
+
+def render_google_sheets_integration():
+    """Renderiza integração com Google Sheets"""
+    st.title("☁️ Integração Google Sheets")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.markdown("""
+        ### 📊 Sincronização Automática
+        
+        Crie automaticamente planilhas organizadas no Google Sheets com:
+        
+        ✅ **Dados Completos** - Todas as transações organizadas  
+        ✅ **Resumo Mensal** - Receitas, despesas e saldo por mês  
+        ✅ **Análise por Categoria** - Total e média por tipo de gasto  
+        ✅ **Custos Fixos vs Variáveis** - Análise temporal dos custos  
+        ✅ **Top 50 Gastos** - Maiores transações do período  
+        
+        ### 🔗 Acesso Direto
+        
+        Após a sincronização, você terá acesso direto às planilhas organizadas por ano e mês.
+        """)
+    
+    with col2:
+        st.markdown("### ⚙️ Configuração")
+        
+        # Verificar se Google Sheets está configurado
+        credentials_exist = os.path.exists('credentials/google_credentials.json')
+        env_configured = os.path.exists('.env')
+        
+        if credentials_exist:
+            st.success("✅ Credenciais configuradas")
+        else:
+            st.error("❌ Credenciais não encontradas")
+            st.markdown("""
+            **Como configurar:**
+            1. Acesse [Google Cloud Console](https://console.cloud.google.com/)
+            2. Habilite Google Sheets API
+            3. Crie Service Account
+            4. Baixe JSON para `credentials/`
+            """)
+        
+        if env_configured:
+            st.success("✅ Arquivo .env encontrado")
+        else:
+            st.warning("⚠️ Configure arquivo .env")
+    
+    st.markdown("---")
+    
+    # Seção de ação
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("🚀 Sincronizar Agora", help="Sincronizar dados com Google Sheets"):
+            if not credentials_exist:
+                st.error("❌ Configure as credenciais primeiro!")
+                return
+            
+            try:
+                with st.spinner("📤 Sincronizando com Google Sheets..."):
+                    # Executar sincronização
+                    if GOOGLE_SHEETS_AVAILABLE:
+                        quick_sync()
+                        st.success("✅ Sincronização concluída!")
+                        st.balloons()
+                    else:
+                        # Executar como processo separado
+                        result = subprocess.run([
+                            sys.executable, "src/google_sheets_sync.py"
+                        ], capture_output=True, text=True)
+                        
+                        if result.returncode == 0:
+                            st.success("✅ Sincronização concluída!")
+                            st.balloons()
+                        else:
+                            st.error(f"❌ Erro na sincronização: {result.stderr}")
+                            
+            except Exception as e:
+                st.error(f"❌ Erro: {e}")
+                st.error("Verifique se os módulos estão em src/ e as credenciais estão configuradas.")
+    
+    with col2:
+        # Botão para abrir Google Sheets diretamente
+        if st.button("📊 Abrir Google Sheets", help="Abrir Google Sheets no navegador"):
+            sheets_url = "https://docs.google.com/spreadsheets/"
+            webbrowser.open(sheets_url)
+            st.success("🌐 Google Sheets aberto no navegador!")
+    
+    with col3:
+        if st.button("⚙️ Configurar APIs", help="Guia de configuração"):
+            st.info("""
+            **Configuração rápida:**
+            
+            1. **Google Cloud Console**:
+               - Habilite Google Sheets API
+               - Crie Service Account  
+               - Baixe credenciais JSON
+            
+            2. **Arquivo .env**:
+               ```
+               GOOGLE_CREDENTIALS_PATH=credentials/google_credentials.json
+               SPREADSHEET_NAME=Dashboard Financeiro Pessoal
+               ```
+            
+            3. **Emails de acesso**:
+               - dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com
+               - matheusbnas@gmail.com
+            """)
+    
+    # Status da última sincronização
+    st.markdown("### 📅 Histórico de Sincronização")
+    
+    # Verificar se há dados para sincronizar
+    csv_files = glob.glob("*.csv") + glob.glob("data/raw/*.csv") + glob.glob("Nubank_*.csv")
+    
+    if csv_files:
+        st.success(f"📄 {len(csv_files)} arquivo(s) CSV encontrado(s) e pronto(s) para sincronização")
+        
+        # Mostrar preview dos dados
+        with st.expander("👀 Preview dos Dados"):
+            try:
+                # Carregar primeiro arquivo como exemplo
+                sample_file = csv_files[0]
+                df_sample = pd.read_csv(sample_file)
+                
+                st.write(f"**Arquivo:** {os.path.basename(sample_file)}")
+                st.write(f"**Transações:** {len(df_sample):,}")
+                st.write(f"**Colunas:** {', '.join(df_sample.columns)}")
+                
+                # Verificar se é formato Nubank
+                is_nubank = all(col in df_sample.columns for col in ['date', 'title', 'amount'])
+                if is_nubank:
+                    st.success("💳 Formato Nubank detectado - Análise otimizada!")
+                
+                st.dataframe(df_sample.head(3), use_container_width=True)
+                
+            except Exception as e:
+                st.error(f"Erro ao ler arquivo: {e}")
+    else:
+        st.warning("⚠️ Nenhum arquivo CSV encontrado para sincronizar")
+        st.info("Coloque seus extratos do Nubank nas pastas: atual, data/raw/ ou extratos/")
+    
+    # Informações de contato
+    st.markdown("---")
+    st.markdown("""
+    ### 📧 Configuração de Email
+    
+    **Service Account configurado:**  
+    `dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com`
+    
+    **Email pessoal:**  
+    `matheusbnas@gmail.com`
+    
+    Certifique-se de que ambos os emails tenham acesso às planilhas criadas.
+    """)
 
 def detect_nubank_format(df):
     """Detecta se o CSV é do formato Nubank (date, title, amount)"""
@@ -897,6 +1179,34 @@ def show_expense_titles_analysis(df, is_nubank_data=False):
 def main():
     """Função principal do dashboard"""
     
+    # Inicializar estado da navegação
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 'dashboard'
+    
+    # Renderizar menu de navegação
+    render_navigation_menu()
+    
+    # Roteamento baseado na página atual
+    if st.session_state.current_page == 'chatbot':
+        if CHATBOT_AVAILABLE:
+            render_chatbot()
+        else:
+            st.error("❌ Módulo do chatbot não encontrado!")
+            st.info("Verifique se o arquivo chatbot.py está na pasta raiz do projeto.")
+            
+            # Botão para voltar ao dashboard
+            if st.button("🔙 Voltar ao Dashboard"):
+                st.session_state.current_page = 'dashboard'
+                st.rerun()
+        return
+    
+    elif st.session_state.current_page == 'sheets':
+        render_google_sheets_integration()
+        return
+    
+    # Página principal do dashboard
+    st.session_state.current_page = 'dashboard'
+    
     # Header principal
     st.markdown("""
     <div class="main-header">
@@ -908,6 +1218,12 @@ def main():
     # Sidebar para configurações
     st.sidebar.title("⚙️ Configurações")
     st.sidebar.markdown("### 📁 Status dos Arquivos")
+    
+    # Botão especial para Google Sheets no sidebar
+    st.sidebar.markdown("### ☁️ Google Sheets")
+    if st.sidebar.button("📊 Criar Planilhas Automáticas", help="Sincronizar e criar planilhas organizadas no Google Sheets"):
+        st.session_state.current_page = 'sheets'
+        st.rerun()
     
     # Carregar dados
     with st.spinner("🔄 Carregando dados..."):
@@ -974,6 +1290,7 @@ def main():
             <li>🔄 <strong>Frequência de compras</strong> - Quantas vezes comprou em cada lugar</li>
             <li>💡 <strong>Categorização inteligente</strong> - Baseada em padrões do Nubank</li>
             <li>📊 <strong>Controle de gastos</strong> - Comparação entre períodos</li>
+            <li>🤖 <strong>Assistente IA</strong> - Chat inteligente sobre seus gastos</li>
         </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -999,7 +1316,7 @@ def main():
     
     if is_nubank_data:
         st.sidebar.markdown("""
-        <div style="background-color: #e8f4fd; padding: 1rem; border-radius: 5px; margin: 1rem 0;">
+        <div style="background: linear-gradient(135deg, #8b2fff 0%, #a855f7 100%); padding: 1rem; border-radius: 8px; margin: 1rem 0; color: white;">
         <h4>💳 Modo Nubank Ativo</h4>
         <p><strong>Características:</strong></p>
         <ul>
@@ -1313,7 +1630,8 @@ def main():
     <div class="footer">
         <h3>{footer_text}</h3>
         <p>Análise completa e inteligente dos seus dados financeiros | 🔒 Dados processados localmente</p>
-        <p>Versão 4.0 - Otimizada para dados Nubank e bancários tradicionais</p>
+        <p>Versão 5.0 - Otimizada para dados Nubank com IA integrada</p>
+        <p>🤖 Assistente IA | ☁️ Google Sheets | 📈 Análise Avançada</p>
     </div>
     """, unsafe_allow_html=True)
 

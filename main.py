@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Dashboard Financeiro Completo - Launcher Principal
-Sistema completo de análise financeira pessoal
+Dashboard Financeiro Completo v5.0 - Launcher Principal
+Sistema completo de análise financeira pessoal com IA integrada
+
+🚀 NOVAS FUNCIONALIDADES v5.0:
+✅ Chatbot IA integrado para análise conversacional
+✅ Google Sheets avançado com organização automática por ano/mês
+✅ CSS otimizado para perfeita compatibilidade claro/escuro
+✅ Menu de navegação unificado no dashboard
+✅ Configuração automática completa
 
 Execute: python main.py
-
-Funcionalidades:
-- Dashboard interativo
-- Categorização automática com LLM
-- Sincronização Google Sheets
-- Análise avançada e relatórios
-- Configuração automática
 """
 
 import os
@@ -20,42 +20,63 @@ import json
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
+import webbrowser
+import platform
 
 # Adicionar pasta src ao path para imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-# ASCII Art para o header (corrigido - escapando caracteres)
+# ASCII Art atualizado
 LOGO = r"""
- $$$$$$\  $$$$$$$\   $$$$$$\   $$$$$$\  $$\   $$\ $$$$$$\ $$\      $$\  $$$$$$\  
-$$  __$$\ $$  __$$\ $$  __$$\ $$  __$$\ $$ |  $$ |\_$$  _|$$$\    $$$ |$$  __$$\ 
-$$ /  \__|$$ |  $$ |$$ /  $$ |$$ /  \__|$$ |  $$ |  $$ |  $$$$\  $$$$ |$$ /  $$ |
-\$$$$$$\  $$$$$$$  |$$$$$$$$ |\$$$$$$\  $$$$$$$$ |  $$ |  $$\$$\$$ $$ |$$ |  $$ |
- \____$$\ $$  ____/ $$  __$$ | \____$$\ $$  __$$ |  $$ |  $$ \$$$  $$ |$$ |  $$ |
-$$\   $$ |$$ |      $$ |  $$ |$$\   $$ |$$ |  $$ |  $$ |  $$ |\$  /$$ |$$ |  $$ |
-\$$$$$$  |$$ |      $$ |  $$ |\$$$$$$  |$$ |  $$ |$$$$$$\ $$ | \_/ $$ | $$$$$$  |
- \______/ \__|      \__|  \__| \______/ \__|  \__|\______|\__|     \__| \______/ 
+ $$$$$$\  $$$$$$$\   $$$$$$\   $$$$$$\  $$\   $$\ $$$$$$\ $$\      $$\  $$$$$$\        $$\    $$\ $$$$$$$\  
+$$  __$$\ $$  __$$\ $$  __$$\ $$  __$$\ $$ |  $$ |\_$$  _|$$$\    $$$ |$$  __$$\       $$ |   $$ |$$  _____|
+$$ /  \__|$$ |  $$ |$$ /  $$ |$$ /  \__|$$ |  $$ |  $$ |  $$$$\  $$$$ |$$ /  $$ |      $$ |   $$ |$$ |      
+\$$$$$$\  $$$$$$$  |$$$$$$$$ |\$$$$$$\  $$$$$$$$ |  $$ |  $$\$$\$$ $$ |$$ |  $$ |      \$$\  $$  |$$$$$$$\  
+ \____$$\ $$  ____/ $$  __$$ | \____$$\ $$  __$$ |  $$ |  $$ \$$$  $$ |$$ |  $$ |       \$$\$$  / \_____$$\ 
+$$\   $$ |$$ |      $$ |  $$ |$$\   $$ |$$ |  $$ |  $$ |  $$ |\$  /$$ |$$ |  $$ |        \$$$  /  $$\   $$ |
+\$$$$$$  |$$ |      $$ |  $$ |\$$$$$$  |$$ |  $$ |$$$$$$\ $$ | \_/ $$ | $$$$$$  |         \$  /   \$$$$$$  |
+ \______/ \__|      \__|  \__| \______/ \__|  \__|\______|\__|     \__| \______/           \_/     \______/ 
 """
 
-class FinancialDashboardLauncher:
-    """Launcher principal do sistema"""
+class FinancialDashboardLauncherV5:
+    """Launcher principal do sistema v5.0 com IA integrada"""
     
     def __init__(self):
         self.config_file = "config.json"
+        self.version = "5.0.0"
         
-        # CORREÇÃO: Definir modules ANTES de usar
+        # Módulos disponíveis (atualizado)
         self.modules = {
             'dashboard': 'dashboard.py',
+            'chatbot': 'chatbot.py',
             'categorizer': 'src/llm_categorizer.py',
-            'sync': 'src/google_sheets_sync.py',
-            'analytics': 'src/advanced_analytics.py'
+            'sync_basic': 'src/google_sheets_sync.py',
+            'sync_advanced': 'src/google_sheets_advanced.py',
+            'analytics': 'src/advanced_analytics.py',
+            'auto_setup': 'auto_setup.py',
+            'system_check': 'system_checker.py'
         }
         
         self.config = self.load_config()
         self.data_stats = self.check_data_availability()
+        self.system_status = self.check_system_status()
     
     def load_config(self) -> dict:
         """Carrega configuração do sistema"""
         default_config = {
+            "project_info": {
+                "name": "Dashboard Financeiro Avançado",
+                "version": self.version,
+                "created": datetime.now().isoformat(),
+                "last_updated": datetime.now().isoformat()
+            },
+            "features": {
+                "chatbot_enabled": True,
+                "google_sheets_advanced": True,
+                "ai_categorization": True,
+                "nubank_optimized": True,
+                "theme_adaptive": True
+            },
             "first_run": True,
             "google_sheets_configured": False,
             "llm_provider": "groq",
@@ -64,12 +85,29 @@ class FinancialDashboardLauncher:
             "user_preferences": {
                 "default_action": "dashboard",
                 "auto_categorize": True,
-                "auto_sync": False
+                "auto_sync": False,
+                "preferred_llm": "groq"
             },
-            "project_structure": {
-                "modules_in_src": True,
-                "css_folder": "css",
-                "config_folder": "config"
+            "integrations": {
+                "google_sheets": {
+                    "advanced_mode": True,
+                    "auto_organize": True,
+                    "create_yearly_summary": True
+                },
+                "ai_services": {
+                    "groq_enabled": False,
+                    "openai_enabled": False,
+                    "chatbot_active": True
+                }
+            },
+            "ui": {
+                "theme": "auto",
+                "css_optimized": True,
+                "navigation_menu": True
+            },
+            "emails": {
+                "primary": "matheusbnas@gmail.com",
+                "service_account": "dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com"
             }
         }
         
@@ -77,7 +115,7 @@ class FinancialDashboardLauncher:
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     config = json.load(f)
-                # Mesclar com defaults para novos campos
+                # Mesclar com defaults para novos campos v5.0
                 for key, value in default_config.items():
                     if key not in config:
                         config[key] = value
@@ -91,6 +129,7 @@ class FinancialDashboardLauncher:
     def save_config(self):
         """Salva configuração"""
         try:
+            self.config["project_info"]["last_updated"] = datetime.now().isoformat()
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, ensure_ascii=False, indent=2)
         except Exception as e:
@@ -100,19 +139,15 @@ class FinancialDashboardLauncher:
         """Verifica disponibilidade de dados"""
         stats = {
             "csv_files": 0,
+            "nubank_files": 0,
             "total_transactions": 0,
             "date_range": None,
             "categories_available": False,
             "folders_checked": [],
-            "modules_status": {},
-            "nubank_files": 0
+            "recent_files": []
         }
         
-        # Verificar status dos módulos
-        for module_name, module_path in self.modules.items():
-            stats["modules_status"][module_name] = os.path.exists(module_path)
-        
-        # Procurar CSVs (incluindo padrão Nubank)
+        # Procurar CSVs
         csv_files = []
         nubank_files = []
         
@@ -129,129 +164,236 @@ class FinancialDashboardLauncher:
         stats["csv_files"] = len(csv_files)
         stats["nubank_files"] = len(nubank_files)
         
+        # Arquivos mais recentes
         if csv_files:
+            csv_files_with_time = [(f, f.stat().st_mtime) for f in csv_files]
+            csv_files_with_time.sort(key=lambda x: x[1], reverse=True)
+            stats["recent_files"] = [str(f[0]) for f in csv_files_with_time[:5]]
+            
+            # Analisar arquivo de exemplo
             try:
-                # Analisar arquivo de exemplo
                 sample_file = csv_files[0]
-                
-                # Detectar se é formato Nubank
-                if any('Nubank' in str(f) for f in csv_files):
-                    # Formato Nubank: date, title, amount
-                    sample_df = pd.read_csv(sample_file)
-                    
-                    if 'date' in sample_df.columns:
-                        sample_df['date'] = pd.to_datetime(sample_df['date'], errors='coerce')
-                        stats["date_range"] = {
-                            "start": sample_df['date'].min(),
-                            "end": sample_df['date'].max()
-                        }
-                else:
-                    # Formato tradicional
-                    sample_df = pd.read_csv(sample_file)
-                    if 'Data' in sample_df.columns:
-                        sample_df['Data'] = pd.to_datetime(sample_df['Data'], errors='coerce')
-                        stats["date_range"] = {
-                            "start": sample_df['Data'].min(),
-                            "end": sample_df['Data'].max()
-                        }
+                sample_df = pd.read_csv(sample_file)
                 
                 stats["total_transactions"] = len(sample_df)
                 stats["categories_available"] = 'Categoria' in sample_df.columns
                 
+                # Detectar formato e datas
+                if all(col in sample_df.columns for col in ['date', 'title', 'amount']):
+                    # Formato Nubank
+                    sample_df['date'] = pd.to_datetime(sample_df['date'], errors='coerce')
+                    stats["date_range"] = {
+                        "start": sample_df['date'].min(),
+                        "end": sample_df['date'].max()
+                    }
+                    stats["format"] = "Nubank"
+                elif 'Data' in sample_df.columns:
+                    # Formato tradicional
+                    sample_df['Data'] = pd.to_datetime(sample_df['Data'], errors='coerce')
+                    stats["date_range"] = {
+                        "start": sample_df['Data'].min(),
+                        "end": sample_df['Data'].max()
+                    }
+                    stats["format"] = "Tradicional"
+                
             except Exception as e:
-                print(f"⚠️ Erro ao analisar dados: {e}")
+                stats["error"] = str(e)
         
         return stats
     
-    def show_welcome_screen(self):
-        """Exibe tela de boas-vindas"""
+    def check_system_status(self) -> dict:
+        """Verifica status do sistema"""
+        status = {
+            "modules_available": {},
+            "dependencies_ok": True,
+            "css_optimized": False,
+            "chatbot_ready": False,
+            "google_sheets_ready": False,
+            "ai_ready": False
+        }
+        
+        # Verificar módulos
+        for module_name, module_path in self.modules.items():
+            status["modules_available"][module_name] = os.path.exists(module_path)
+        
+        # Verificar dependências críticas
+        try:
+            import streamlit
+            import pandas
+            import plotly
+            status["dependencies_ok"] = True
+        except ImportError:
+            status["dependencies_ok"] = False
+        
+        # Verificar CSS otimizado
+        css_path = Path("css/dashboard_styles.css")
+        if css_path.exists():
+            css_content = css_path.read_text(encoding='utf-8')
+            status["css_optimized"] = "prefers-color-scheme" in css_content
+        
+        # Verificar chatbot
+        status["chatbot_ready"] = status["modules_available"].get("chatbot", False)
+        
+        # Verificar Google Sheets
+        creds_exist = os.path.exists("credentials/google_credentials.json")
+        advanced_module = status["modules_available"].get("sync_advanced", False)
+        status["google_sheets_ready"] = creds_exist and advanced_module
+        
+        # Verificar IA
+        env_file = Path(".env")
+        if env_file.exists():
+            env_content = env_file.read_text(encoding='utf-8')
+            has_groq = "GROQ_API_KEY=" in env_content and len(env_content.split("GROQ_API_KEY=")[1].split("\n")[0].strip()) > 0
+            has_openai = "OPENAI_API_KEY=" in env_content and len(env_content.split("OPENAI_API_KEY=")[1].split("\n")[0].strip()) > 0
+            status["ai_ready"] = has_groq or has_openai
+        
+        return status
+    
+    def show_welcome_screen_v5(self):
+        """Exibe tela de boas-vindas v5.0"""
         os.system('cls' if os.name == 'nt' else 'clear')
         
         print("\033[96m" + LOGO + "\033[0m")
-        print("\033[92m" + "="*80 + "\033[0m")
-        print("\033[93m" + "         DASHBOARD FINANCEIRO PESSOAL COMPLETO".center(80) + "\033[0m")
-        print("\033[94m" + "                    Estrutura Organizada src/".center(80) + "\033[0m")
-        print("\033[92m" + "="*80 + "\033[0m")
+        print("\033[92m" + "="*100 + "\033[0m")
+        print("\033[93m" + "         DASHBOARD FINANCEIRO PESSOAL COMPLETO v5.0".center(100) + "\033[0m")
+        print("\033[94m" + "        🤖 IA INTEGRADA | ☁️ GOOGLE SHEETS AVANÇADO | 💳 NUBANK OTIMIZADO".center(100) + "\033[0m")
+        print("\033[92m" + "="*100 + "\033[0m")
+        
+        # Novidades v5.0
+        print(f"\n🎉 NOVIDADES v5.0:")
+        print(f"   🤖 Chatbot IA integrado - Converse sobre seus gastos")
+        print(f"   ☁️ Google Sheets avançado - Planilhas organizadas automaticamente")
+        print(f"   🎨 CSS otimizado - Perfeita compatibilidade claro/escuro") 
+        print(f"   🧭 Menu unificado - Navegação integrada no dashboard")
+        print(f"   ⚙️ Configuração automática - Setup completo em um comando")
         
         # Status do sistema
         print(f"\n📊 STATUS DO SISTEMA:")
-        print(f"   • Arquivos CSV encontrados: {self.data_stats['csv_files']}")
-        print(f"   • Arquivos Nubank encontrados: {self.data_stats['nubank_files']}")
+        print(f"   • Arquivos CSV: {self.data_stats.get('csv_files', 0)} (Nubank: {self.data_stats.get('nubank_files', 0)})")
+        print(f"   • Transações estimadas: {self.data_stats.get('total_transactions', 0):,}")
         
-        # Status dos módulos
-        print(f"\n🔧 STATUS DOS MÓDULOS:")
-        module_names = {
-            'dashboard': '📊 Dashboard',
-            'categorizer': '🤖 Categorizador', 
-            'sync': '☁️ Google Sheets',
-            'analytics': '📈 Analytics'
-        }
+        if self.data_stats.get('date_range'):
+            start = self.data_stats['date_range']['start']
+            end = self.data_stats['date_range']['end']
+            if pd.notna(start) and pd.notna(end):
+                print(f"   • Período: {start.strftime('%d/%m/%Y')} até {end.strftime('%d/%m/%Y')}")
         
-        for module_key, status in self.data_stats["modules_status"].items():
-            module_display = module_names.get(module_key, module_key)
+        # Status dos módulos v5.0
+        print(f"\n🔧 FUNCIONALIDADES v5.0:")
+        modules_status = self.system_status["modules_available"]
+        
+        features = [
+            ("📊 Dashboard Principal", modules_status.get('dashboard', False)),
+            ("🤖 Chatbot IA", self.system_status["chatbot_ready"]),
+            ("☁️ Google Sheets Avançado", self.system_status["google_sheets_ready"]),
+            ("🏷️ Categorização IA", modules_status.get('categorizer', False)),
+            ("📈 Análise Avançada", modules_status.get('analytics', False)),
+            ("🎨 CSS Otimizado", self.system_status["css_optimized"]),
+            ("🔧 Dependências", self.system_status["dependencies_ok"])
+        ]
+        
+        for feature_name, status in features:
             status_icon = "✅" if status else "❌"
-            print(f"   • {module_display}: {status_icon}")
-        
-        if self.data_stats['csv_files'] > 0:
-            print(f"   • Transações estimadas: {self.data_stats['total_transactions']:,}")
-            if self.data_stats['date_range']:
-                start = self.data_stats['date_range']['start']
-                end = self.data_stats['date_range']['end']
-                if pd.notna(start) and pd.notna(end):
-                    print(f"   • Período: {start.strftime('%d/%m/%Y')} até {end.strftime('%d/%m/%Y')}")
-            print(f"   • Categorias: {'✅ Disponíveis' if self.data_stats['categories_available'] else '❌ Não categorizadas'}")
+            print(f"   • {feature_name}: {status_icon}")
         
         # Status das integrações
         print(f"\n🔧 INTEGRAÇÕES:")
-        print(f"   • Google Sheets: {'✅ Configurado' if self.config['google_sheets_configured'] else '❌ Não configurado'}")
-        print(f"   • LLM para categorização: {'✅ ' + self.config['llm_provider'].upper() if self.config['llm_provider'] != 'local' else '❌ Apenas regras'}")
+        print(f"   • Google Sheets: {'✅ Configurado' if self.system_status['google_sheets_ready'] else '❌ Não configurado'}")
+        print(f"   • IA (Groq/OpenAI): {'✅ Configurada' if self.system_status['ai_ready'] else '❌ Não configurada'}")
         
         # Dados Nubank
-        if self.data_stats['nubank_files'] > 0:
+        if self.data_stats.get('nubank_files', 0) > 0:
             print(f"\n💳 DADOS NUBANK DETECTADOS:")
             print(f"   • {self.data_stats['nubank_files']} arquivos Nubank_*.csv")
-            print(f"   • Formato: date, title, amount")
-            print(f"   • Processamento otimizado para cartão Nubank")
+            print(f"   • Análise otimizada disponível")
+            print(f"   • Chatbot especializado ativo")
         
-        # Primeira execução
-        if self.config["first_run"]:
-            print(f"\n🎉 BEM-VINDO! Esta é sua primeira execução.")
-            print(f"   Recomendamos começar pela configuração inicial.")
+        # Configuração inicial
+        if self.config.get("first_run", True):
+            print(f"\n🎯 PRIMEIRA EXECUÇÃO DETECTADA:")
+            print(f"   Recomendamos executar a configuração automática para otimizar o sistema.")
     
-    def show_main_menu(self):
-        """Exibe menu principal"""
-        print(f"\n" + "="*60)
-        print("MENU PRINCIPAL")
-        print("="*60)
+    def show_main_menu_v5(self):
+        """Exibe menu principal v5.0"""
+        print(f"\n" + "="*80)
+        print("MENU PRINCIPAL v5.0 - IA INTEGRADA")
+        print("="*80)
         
         options = [
-            ("1", "🚀 Executar Dashboard Interativo", "dashboard", self.data_stats['csv_files'] > 0),
-            ("2", "🤖 Categorizar Transações (LLM)", "categorize", self.data_stats['csv_files'] > 0 and self.data_stats["modules_status"].get('categorizer', False)),
-            ("3", "☁️  Sincronizar Google Sheets", "sync", self.data_stats['csv_files'] > 0 and self.data_stats["modules_status"].get('sync', False)),
-            ("4", "📈 Análise Avançada e Relatórios", "analyze", self.data_stats['csv_files'] > 0 and self.data_stats["modules_status"].get('analytics', False)),
-            ("5", "⚙️  Configuração Inicial", "setup", True),
-            ("6", "🔧 Configurações do Sistema", "config", True),
-            ("7", "📁 Verificar Estrutura do Projeto", "structure", True),
-            ("8", "ℹ️  Ajuda e Documentação", "help", True),
-            ("9", "🔄 Atualizar Status dos Dados", "refresh", True),
+            # Funcionalidades principais
+            ("1", "🚀 Dashboard Interativo Completo", "dashboard", 
+             self.system_status["modules_available"].get('dashboard', False)),
+            
+            ("2", "🤖 Chatbot IA Financeiro", "chatbot", 
+             self.system_status["chatbot_ready"]),
+            
+            ("3", "☁️ Google Sheets Avançado", "sheets_advanced", 
+             self.system_status["google_sheets_ready"]),
+            
+            ("4", "🏷️ Categorizar com IA", "categorize", 
+             self.system_status["modules_available"].get('categorizer', False)),
+            
+            ("5", "📈 Análise Avançada & Relatórios", "analyze", 
+             self.system_status["modules_available"].get('analytics', False)),
+            
+            # Configuração e manutenção
+            ("6", "⚙️ Configuração Automática", "auto_setup", 
+             self.system_status["modules_available"].get('auto_setup', False)),
+            
+            ("7", "🔧 Configurações do Sistema", "config", True),
+            
+            ("8", "🔍 Diagnóstico Completo", "system_check", 
+             self.system_status["modules_available"].get('system_check', False)),
+            
+            # Utilitários
+            ("9", "📁 Gerenciar Dados", "data_manager", True),
+            
+            ("10", "ℹ️ Ajuda & Documentação", "help", True),
+            
             ("0", "❌ Sair", "exit", True)
         ]
         
         for num, title, action, enabled in options:
-            if not enabled and action in ['categorize', 'sync', 'analyze']:
-                status = " (❌ Módulo não encontrado em src/)"
-            elif not enabled:
-                status = " (❌ Sem dados)"
+            if not enabled:
+                if action in ['categorize', 'analyze', 'sheets_advanced']:
+                    status = " (❌ Módulo não encontrado)"
+                elif action == 'chatbot':
+                    status = " (❌ Chatbot não configurado)"
+                elif action == 'sheets_advanced':
+                    status = " (❌ Google Sheets não configurado)"
+                else:
+                    status = " (❌ Não disponível)"
             else:
                 status = ""
                 
             color = "\033[92m" if enabled else "\033[91m"
-            print(f"{color}{num}. {title}{status}\033[0m")
+            print(f"{color}{num:>2}. {title}{status}\033[0m")
         
-        print("="*60)
+        print("="*80)
+        
+        # Sugestões baseadas no status
+        if self.config.get("first_run", True):
+            print("\n💡 PRIMEIRA EXECUÇÃO - SUGESTÕES:")
+            print("   1. Execute 'Configuração Automática' para setup completo")
+            print("   2. Configure APIs (.env) para IA e Google Sheets")
+            print("   3. Adicione dados CSV em data/raw/")
+            print("   4. Use o Dashboard Interativo")
+        
+        if not self.system_status["ai_ready"]:
+            print("\n🤖 CONFIGURE IA (OPCIONAL):")
+            print("   • Groq (gratuito): https://console.groq.com/")
+            print("   • OpenAI (pago): https://platform.openai.com/")
+            print("   • Adicione chaves no arquivo .env")
+        
+        if not self.system_status["google_sheets_ready"]:
+            print("\n☁️ CONFIGURE GOOGLE SHEETS:")
+            print("   • Google Cloud Console: APIs & Services")
+            print("   • Habilite Google Sheets API + Drive API")
+            print("   • Crie Service Account e baixe JSON")
+            print("   • Salve em credentials/google_credentials.json")
         
         while True:
-            choice = input("\n📝 Escolha uma opção (0-9): ").strip()
+            choice = input(f"\n📝 Escolha uma opção (0-10): ").strip()
             
             selected_option = next((opt for opt in options if opt[0] == choice), None)
             if selected_option:
@@ -259,41 +401,439 @@ class FinancialDashboardLauncher:
                 if enabled:
                     return action
                 else:
-                    if action in ['categorize', 'sync', 'analyze']:
-                        print("❌ Este módulo não foi encontrado na pasta src/!")
-                        print("💡 Verifique se os arquivos estão na pasta correta")
-                    else:
-                        print("❌ Esta opção requer dados CSV. Configure primeiro!")
+                    print("❌ Esta funcionalidade não está disponível!")
+                    if action == "chatbot":
+                        print("💡 Configure o arquivo chatbot.py na raiz do projeto")
+                    elif action in ['categorize', 'analyze']:
+                        print("💡 Verifique se os módulos estão na pasta src/")
+                    elif action == "sheets_advanced":
+                        print("💡 Configure Google Sheets API e credenciais")
             else:
-                print("⚠️ Opção inválida! Digite um número de 0 a 9.")
+                print("⚠️ Opção inválida! Digite um número de 0 a 10.")
     
     def execute_dashboard(self):
         """Executa dashboard principal"""
-        print("\n🚀 Iniciando Dashboard Interativo...")
+        print("\n🚀 Iniciando Dashboard Interativo v5.0...")
+        print("   • Interface otimizada com menu de navegação")
+        print("   • Suporte completo a temas claro/escuro")
+        print("   • Integração com chatbot e Google Sheets")
         
-        dashboard_file = self.modules['dashboard']
-        
-        if not os.path.exists(dashboard_file):
-            print(f"❌ Arquivo do dashboard não encontrado: {dashboard_file}")
+        if not self.system_status["modules_available"].get('dashboard', False):
+            print("❌ dashboard.py não encontrado!")
             input("Pressione Enter para continuar...")
             return
         
         try:
-            subprocess.run([sys.executable, "-m", "streamlit", "run", dashboard_file])
+            subprocess.run([sys.executable, "-m", "streamlit", "run", "dashboard.py"])
         except Exception as e:
             print(f"❌ Erro ao executar dashboard: {e}")
-            print("💡 Tente executar manualmente: streamlit run dashboard.py")
             input("Pressione Enter para continuar...")
     
+    def execute_chatbot(self):
+        """Executa chatbot IA"""
+        print("\n🤖 Iniciando Chatbot IA Financeiro...")
+        print("   • Análise conversacional dos seus gastos")
+        print("   • Suporte a Groq (gratuito) e OpenAI")
+        print("   • Respostas inteligentes sobre padrões financeiros")
+        
+        if not self.system_status["chatbot_ready"]:
+            print("❌ Chatbot não está configurado!")
+            print("💡 Verifique se chatbot.py existe na raiz do projeto")
+            input("Pressione Enter para continuar...")
+            return
+        
+        try:
+            subprocess.run([sys.executable, "-m", "streamlit", "run", "chatbot.py"])
+        except Exception as e:
+            print(f"❌ Erro ao executar chatbot: {e}")
+            input("Pressione Enter para continuar...")
+    
+    def execute_advanced_sheets(self):
+        """Executa Google Sheets avançado"""
+        print("\n☁️ Iniciando Google Sheets Avançado...")
+        print("   • Criação automática de planilhas por ano/mês")
+        print("   • Organização inteligente dos dados")
+        print("   • Compartilhamento automático configurado")
+        
+        if not self.system_status["google_sheets_ready"]:
+            print("❌ Google Sheets não configurado!")
+            print("💡 Configure credenciais em credentials/google_credentials.json")
+            input("Pressione Enter para continuar...")
+            return
+        
+        advanced_module = self.modules.get('sync_advanced')
+        if not advanced_module or not os.path.exists(advanced_module):
+            print("❌ Módulo avançado não encontrado!")
+            print("💡 Verifique se google_sheets_advanced.py está em src/")
+            input("Pressione Enter para continuar...")
+            return
+        
+        try:
+            subprocess.run([sys.executable, advanced_module])
+        except Exception as e:
+            print(f"❌ Erro na sincronização avançada: {e}")
+            input("Pressione Enter para continuar...")
+    
+    def execute_auto_setup(self):
+        """Executa configuração automática"""
+        print("\n⚙️ Configuração Automática v5.0...")
+        print("   • Cria estrutura completa do projeto")
+        print("   • Instala todas as dependências")
+        print("   • Configura arquivos de segurança")
+        print("   • Otimiza sistema para v5.0")
+        
+        auto_setup_file = self.modules.get('auto_setup')
+        if not auto_setup_file or not os.path.exists(auto_setup_file):
+            print("❌ Script de configuração não encontrado!")
+            print("💡 Certifique-se de ter auto_setup.py na raiz")
+            input("Pressione Enter para continuar...")
+            return
+        
+        try:
+            subprocess.run([sys.executable, auto_setup_file])
+            print("✅ Configuração automática concluída!")
+            print("🔄 Reiniciando para aplicar mudanças...")
+            
+            # Recarregar configurações
+            self.config = self.load_config()
+            self.system_status = self.check_system_status()
+            
+        except Exception as e:
+            print(f"❌ Erro na configuração automática: {e}")
+            input("Pressione Enter para continuar...")
+    
+    def execute_data_manager(self):
+        """Gerenciador de dados"""
+        print("\n📁 Gerenciador de Dados")
+        print("="*40)
+        
+        print("1. Ver arquivos CSV disponíveis")
+        print("2. Verificar formato dos dados")
+        print("3. Limpar dados processados")
+        print("4. Backup dos dados")
+        print("5. Estatísticas dos dados")
+        print("6. Voltar ao menu principal")
+        
+        choice = input("\nEscolha (1-6): ").strip()
+        
+        if choice == "1":
+            print(f"\n📄 ARQUIVOS CSV ENCONTRADOS:")
+            if self.data_stats["recent_files"]:
+                for i, file in enumerate(self.data_stats["recent_files"], 1):
+                    file_path = Path(file)
+                    size = file_path.stat().st_size / 1024  # KB
+                    modified = datetime.fromtimestamp(file_path.stat().st_mtime)
+                    print(f"   {i}. {file_path.name}")
+                    print(f"      Tamanho: {size:.1f} KB")
+                    print(f"      Modificado: {modified.strftime('%d/%m/%Y %H:%M')}")
+                    print()
+            else:
+                print("   Nenhum arquivo CSV encontrado")
+                print("   💡 Coloque arquivos em: data/raw/, extratos/ ou pasta atual")
+        
+        elif choice == "2":
+            print(f"\n🔍 FORMATO DOS DADOS:")
+            format_type = self.data_stats.get('format', 'Desconhecido')
+            print(f"   • Formato detectado: {format_type}")
+            print(f"   • Transações estimadas: {self.data_stats.get('total_transactions', 0):,}")
+            print(f"   • Categorias disponíveis: {'Sim' if self.data_stats.get('categories_available') else 'Não'}")
+            
+            if format_type == "Nubank":
+                print(f"   • Otimizações Nubank: ✅ Ativas")
+                print(f"   • Análise de estabelecimentos: ✅ Disponível")
+                print(f"   • Chatbot especializado: ✅ Configurado")
+        
+        elif choice == "3":
+            print(f"\n🧹 Limpeza de dados processados...")
+            folders_to_clean = ['data/processed', 'data/exports', 'logs']
+            
+            for folder in folders_to_clean:
+                if os.path.exists(folder):
+                    import shutil
+                    shutil.rmtree(folder)
+                    os.makedirs(folder, exist_ok=True)
+                    print(f"   ✅ {folder}/ limpo")
+            
+            print("✅ Limpeza concluída!")
+        
+        elif choice == "5":
+            print(f"\n📊 ESTATÍSTICAS DOS DADOS:")
+            print(f"   • Total de arquivos CSV: {self.data_stats.get('csv_files', 0)}")
+            print(f"   • Arquivos Nubank: {self.data_stats.get('nubank_files', 0)}")
+            print(f"   • Pastas verificadas: {len(self.data_stats.get('folders_checked', []))}")
+            
+            for folder in self.data_stats.get('folders_checked', []):
+                csv_count = len(list(Path(folder).glob("*.csv")))
+                print(f"     - {folder}: {csv_count} arquivos")
+        
+        input("\nPressione Enter para continuar...")
+    
+    def execute_system_check(self):
+        """Executa diagnóstico do sistema"""
+        print("\n🔍 Diagnóstico Completo do Sistema...")
+        
+        system_check_file = self.modules.get('system_check')
+        if not system_check_file or not os.path.exists(system_check_file):
+            print("❌ Script de diagnóstico não encontrado!")
+            print("💡 Verifique se system_checker.py está na raiz")
+            input("Pressione Enter para continuar...")
+            return
+        
+        try:
+            subprocess.run([sys.executable, system_check_file])
+        except Exception as e:
+            print(f"❌ Erro no diagnóstico: {e}")
+            input("Pressione Enter para continuar...")
+    
+    def show_help_v5(self):
+        """Exibe ajuda atualizada v5.0"""
+        print("\n📖 AJUDA E DOCUMENTAÇÃO v5.0")
+        print("="*60)
+        
+        help_sections = [
+            ("🚀 Início Rápido v5.0", [
+                "1. Execute 'Configuração Automática' (opção 6)",
+                "2. Configure APIs no arquivo .env (opcional)",
+                "3. Adicione dados CSV em data/raw/",
+                "4. Use 'Dashboard Interativo' (opção 1)",
+                "5. Experimente o 'Chatbot IA' (opção 2)"
+            ]),
+            
+            ("💳 Dados Nubank", [
+                "📄 Formato: date,title,amount",
+                "💾 Salvar como: Nubank_YYYYMMDD.csv",
+                "📁 Pasta: data/raw/",
+                "🔧 Processamento automático otimizado",
+                "🏪 Análise de estabelecimentos exclusiva"
+            ]),
+            
+            ("🤖 Chatbot IA", [
+                "💬 Converse sobre seus gastos em linguagem natural",
+                "🔍 Perguntas: 'Quanto gastei?', 'Onde gasto mais?'",
+                "🧠 IA: Groq (gratuito) ou OpenAI (pago)",
+                "⚙️ Configure chaves API no arquivo .env",
+                "🎯 Insights personalizados baseados nos dados"
+            ]),
+            
+            ("☁️ Google Sheets Avançado", [
+                "📊 Criação automática de planilhas por período",
+                "🗓️ Organização por ano e mês",
+                "📋 5 abas especializadas por período",
+                "🔗 Índice master com links automáticos",
+                "👥 Compartilhamento automático configurado"
+            ]),
+            
+            ("🎨 Interface v5.0", [
+                "🧭 Menu de navegação integrado no dashboard",
+                "🌓 Suporte completo a temas claro/escuro",
+                "📱 Design responsivo otimizado",
+                "⚡ Performance melhorada",
+                "🎯 UX otimizada para análise financeira"
+            ]),
+            
+            ("🔧 Comandos Essenciais", [
+                "python main.py - Menu principal completo",
+                "streamlit run dashboard.py - Dashboard direto", 
+                "streamlit run chatbot.py - Chatbot IA direto",
+                "python auto_setup.py - Configuração automática",
+                "python system_checker.py - Diagnóstico"
+            ]),
+            
+            ("📞 Suporte v5.0", [
+                "📧 Email: matheusbnas@gmail.com",
+                "🤖 Service Account: dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com",
+                "📄 Logs: pasta logs/",
+                "🔍 Diagnóstico: python system_checker.py",
+                "📖 Documentação: README.md"
+            ])
+        ]
+        
+        for section, items in help_sections:
+            print(f"\n📋 {section}:")
+            for item in items:
+                print(f"   • {item}")
+        
+        print(f"\n🌐 LINKS ÚTEIS:")
+        print(f"   • Groq API: https://console.groq.com/")
+        print(f"   • OpenAI API: https://platform.openai.com/")
+        print(f"   • Google Cloud: https://console.cloud.google.com/")
+        print(f"   • Google Sheets: https://docs.google.com/spreadsheets/")
+        
+        print(f"\n💡 DICAS v5.0:")
+        print(f"   • Use o menu de navegação no dashboard para acesso rápido")
+        print(f"   • Configure IA para categorização automática")
+        print(f"   • Google Sheets avançado cria planilhas organizadas automaticamente")
+        print(f"   • Chatbot entende linguagem natural sobre finanças")
+        
+        input("\nPressione Enter para continuar...")
+    
+    def execute_config_v5(self):
+        """Configurações do sistema v5.0"""
+        print("\n🔧 Configurações do Sistema v5.0")
+        print("="*50)
+        
+        print("1. 🤖 Configurar IA (Groq/OpenAI)")
+        print("2. ☁️ Configurar Google Sheets")
+        print("3. 🎨 Configurar Interface")
+        print("4. 📁 Configurar Pastas de Dados")
+        print("5. 🧪 Testar Conexões")
+        print("6. 📊 Ver Status Completo")
+        print("7. 🔄 Resetar Configurações")
+        print("8. Voltar ao menu principal")
+        
+        choice = input("\nEscolha (1-8): ").strip()
+        
+        if choice == "1":
+            print("\n🤖 Configuração IA:")
+            print("Providers disponíveis:")
+            print("1. Groq (Gratuito - Recomendado)")
+            print("2. OpenAI (Pago)")
+            print("3. Ambos")
+            
+            ai_choice = input("Escolha (1-3): ").strip()
+            
+            if ai_choice in ['1', '3']:
+                print("\n🔗 Groq API:")
+                print("1. Acesse: https://console.groq.com/")
+                print("2. Crie conta gratuita")
+                print("3. Obtenha API Key")
+                api_key = input("Cole sua GROQ_API_KEY (ou Enter para pular): ").strip()
+                if api_key:
+                    print("💡 Adicione ao arquivo .env: GROQ_API_KEY=" + api_key)
+            
+            if ai_choice in ['2', '3']:
+                print("\n🔗 OpenAI API:")
+                print("1. Acesse: https://platform.openai.com/")
+                print("2. Configure billing")
+                print("3. Obtenha API Key")
+                api_key = input("Cole sua OPENAI_API_KEY (ou Enter para pular): ").strip()
+                if api_key:
+                    print("💡 Adicione ao arquivo .env: OPENAI_API_KEY=" + api_key)
+        
+        elif choice == "2":
+            print("\n☁️ Configuração Google Sheets:")
+            print("Modo avançado v5.0 - Planilhas organizadas automaticamente")
+            print()
+            print("1. Google Cloud Console: https://console.cloud.google.com/")
+            print("2. Crie projeto e habilite APIs:")
+            print("   • Google Sheets API")
+            print("   • Google Drive API")
+            print("3. Crie Service Account")
+            print("4. Baixe JSON para credentials/google_credentials.json")
+            print()
+            print("Emails configurados para compartilhamento:")
+            print(f"   • {self.config['emails']['primary']}")
+            print(f"   • {self.config['emails']['service_account']}")
+        
+        elif choice == "3":
+            print("\n🎨 Configuração Interface v5.0:")
+            print("Funcionalidades:")
+            print("   ✅ Temas adaptativos (claro/escuro automático)")
+            print("   ✅ Menu de navegação integrado")
+            print("   ✅ CSS otimizado para compatibilidade total")
+            print("   ✅ Design responsivo")
+            print()
+            print("Não requer configuração adicional - ativo automaticamente!")
+        
+        elif choice == "5":
+            print("\n🧪 Testando Conexões...")
+            
+            # Testar dependências
+            print("\n📦 Dependências:")
+            deps = ['streamlit', 'pandas', 'plotly', 'gspread']
+            for dep in deps:
+                try:
+                    __import__(dep)
+                    print(f"   ✅ {dep}")
+                except ImportError:
+                    print(f"   ❌ {dep}")
+            
+            # Testar IA
+            print("\n🤖 IA:")
+            env_path = Path(".env")
+            if env_path.exists():
+                env_content = env_path.read_text()
+                groq_configured = "GROQ_API_KEY=" in env_content and len(env_content.split("GROQ_API_KEY=")[1].split("\n")[0].strip()) > 0
+                openai_configured = "OPENAI_API_KEY=" in env_content and len(env_content.split("OPENAI_API_KEY=")[1].split("\n")[0].strip()) > 0
+                
+                print(f"   {'✅' if groq_configured else '❌'} Groq API")
+                print(f"   {'✅' if openai_configured else '❌'} OpenAI API")
+            else:
+                print("   ❌ Arquivo .env não encontrado")
+            
+            # Testar Google Sheets
+            print("\n☁️ Google Sheets:")
+            creds_exist = os.path.exists("credentials/google_credentials.json")
+            print(f"   {'✅' if creds_exist else '❌'} Credenciais")
+            
+            # Testar dados
+            print(f"\n📊 Dados:")
+            print(f"   📄 CSVs: {self.data_stats['csv_files']}")
+            print(f"   💳 Nubank: {self.data_stats['nubank_files']}")
+        
+        elif choice == "6":
+            print(f"\n📊 STATUS COMPLETO DO SISTEMA:")
+            print(f"   • Versão: {self.version}")
+            print(f"   • Primeira execução: {'Sim' if self.config.get('first_run', True) else 'Não'}")
+            print(f"   • Chatbot: {'✅' if self.system_status['chatbot_ready'] else '❌'}")
+            print(f"   • Google Sheets: {'✅' if self.system_status['google_sheets_ready'] else '❌'}")
+            print(f"   • IA: {'✅' if self.system_status['ai_ready'] else '❌'}")
+            print(f"   • CSS Otimizado: {'✅' if self.system_status['css_optimized'] else '❌'}")
+            print(f"   • Dependências: {'✅' if self.system_status['dependencies_ok'] else '❌'}")
+        
+        input("\nPressione Enter para continuar...")
+    
+    def run(self):
+        """Executa o launcher principal v5.0"""
+        try:
+            while True:
+                self.show_welcome_screen_v5()
+                
+                action = self.show_main_menu_v5()
+                
+                if action == "exit":
+                    print("\n👋 Obrigado por usar o Dashboard Financeiro v5.0!")
+                    print("🤖 Agora com IA integrada e Google Sheets avançado!")
+                    print("💡 Seus dados estão seguros e organizados")
+                    break
+                elif action == "dashboard":
+                    self.execute_dashboard()
+                elif action == "chatbot":
+                    self.execute_chatbot()
+                elif action == "sheets_advanced":
+                    self.execute_advanced_sheets()
+                elif action == "categorize":
+                    self.execute_categorization()
+                elif action == "analyze":
+                    self.execute_analysis()
+                elif action == "auto_setup":
+                    self.execute_auto_setup()
+                elif action == "config":
+                    self.execute_config_v5()
+                elif action == "system_check":
+                    self.execute_system_check()
+                elif action == "data_manager":
+                    self.execute_data_manager()
+                elif action == "help":
+                    self.show_help_v5()
+                
+                # Salvar configuração após cada ação
+                self.save_config()
+        
+        except KeyboardInterrupt:
+            print("\n\n👋 Saindo do Dashboard Financeiro v5.0...")
+        except Exception as e:
+            print(f"\n❌ Erro inesperado: {e}")
+            print("💡 Execute diagnóstico: python system_checker.py")
+    
+    # Métodos legados mantidos para compatibilidade
     def execute_categorization(self):
         """Executa categorização automática"""
         print("\n🤖 Iniciando Categorização Automática...")
         
         categorizer_file = self.modules['categorizer']
-        
         if not os.path.exists(categorizer_file):
-            print(f"❌ Módulo de categorização não encontrado: {categorizer_file}")
-            print("💡 Verifique se llm_categorizer.py está em src/")
+            print(f"❌ Módulo não encontrado: {categorizer_file}")
             input("Pressione Enter para continuar...")
             return
         
@@ -303,39 +843,13 @@ class FinancialDashboardLauncher:
             print(f"❌ Erro na categorização: {e}")
             input("Pressione Enter para continuar...")
     
-    def execute_sync(self):
-        """Executa sincronização com Google Sheets"""
-        print("\n☁️ Iniciando Sincronização...")
-        
-        sync_file = self.modules['sync']
-        
-        if not os.path.exists(sync_file):
-            print(f"❌ Módulo de sincronização não encontrado: {sync_file}")
-            print("💡 Verifique se google_sheets_sync.py está em src/")
-            input("Pressione Enter para continuar...")
-            return
-        
-        if not self.config["google_sheets_configured"]:
-            print("⚠️ Google Sheets não configurado!")
-            print("📋 Configure primeiro em: Configuração do Sistema")
-            input("Pressione Enter para continuar...")
-            return
-        
-        try:
-            subprocess.run([sys.executable, sync_file])
-        except Exception as e:
-            print(f"❌ Erro na sincronização: {e}")
-            input("Pressione Enter para continuar...")
-    
     def execute_analysis(self):
         """Executa análise avançada"""
         print("\n📈 Iniciando Análise Avançada...")
         
         analytics_file = self.modules['analytics']
-        
         if not os.path.exists(analytics_file):
-            print(f"❌ Módulo de análise não encontrado: {analytics_file}")
-            print("💡 Verifique se advanced_analytics.py está em src/")
+            print(f"❌ Módulo não encontrado: {analytics_file}")
             input("Pressione Enter para continuar...")
             return
         
@@ -344,330 +858,25 @@ class FinancialDashboardLauncher:
         except Exception as e:
             print(f"❌ Erro na análise: {e}")
             input("Pressione Enter para continuar...")
-    
-    def execute_setup(self):
-        """Executa configuração inicial"""
-        print("\n⚙️ Configuração Inicial do Sistema")
-        print("="*40)
-        
-        # 1. Verificar estrutura de pastas
-        print("📁 Verificando estrutura de pastas...")
-        
-        required_folders = [
-            "src", "data/raw", "data/processed", "data/exports", 
-            "credentials", "css", "config"
-        ]
-        
-        for folder in required_folders:
-            if not os.path.exists(folder):
-                os.makedirs(folder, exist_ok=True)
-                print(f"  ✅ Criada: {folder}")
-            else:
-                print(f"  ✅ Existe: {folder}")
-        
-        # 2. Verificar módulos na pasta src/
-        print("\n🔧 Verificando módulos em src/...")
-        
-        missing_modules = []
-        for module_name, module_path in self.modules.items():
-            if module_name != 'dashboard':  # Dashboard fica na raiz
-                if os.path.exists(module_path):
-                    print(f"  ✅ {module_name}: {module_path}")
-                else:
-                    print(f"  ❌ {module_name}: {module_path} - NÃO ENCONTRADO")
-                    missing_modules.append((module_name, module_path))
-        
-        if missing_modules:
-            print(f"\n⚠️ MÓDULOS FALTANDO:")
-            for module_name, module_path in missing_modules:
-                print(f"   • {module_path}")
-            print(f"\n💡 Mova os arquivos para a pasta src/ ou verifique se existem")
-        
-        # 3. Criar arquivo __init__.py na pasta src se não existir
-        src_init = "src/__init__.py"
-        if not os.path.exists(src_init):
-            with open(src_init, 'w', encoding='utf-8') as f:
-                f.write('"""Módulos principais do Dashboard Financeiro"""\n')
-            print(f"  ✅ Criado: {src_init}")
-        
-        # 4. Verificar dados Nubank
-        print(f"\n💳 Verificando dados Nubank...")
-        if self.data_stats['nubank_files'] > 0:
-            print(f"  ✅ {self.data_stats['nubank_files']} arquivos Nubank encontrados")
-            print(f"  📊 Formato: date, title, amount")
-        else:
-            print(f"  ⚠️ Nenhum arquivo Nubank_*.csv encontrado")
-            print(f"  💡 Baixe extratos do Nubank e coloque em data/raw/")
-        
-        # 5. Criar arquivos de configuração
-        if not os.path.exists(".env"):
-            print("\n📝 Criando arquivo .env...")
-            env_content = """# Google Sheets
-GOOGLE_CREDENTIALS_PATH=credentials/google_credentials.json
-SPREADSHEET_NAME=Dashboard Financeiro Pessoal
-GOOGLE_DRIVE_FOLDER_ID=
-
-# APIs para categorização automática
-OPENAI_API_KEY=
-GROQ_API_KEY=
-
-# Configurações
-DEFAULT_CURRENCY=BRL
-"""
-            with open(".env", "w", encoding="utf-8") as f:
-                f.write(env_content)
-            print("  ✅ Arquivo .env criado")
-        
-        # 6. Atualizar config
-        self.config["first_run"] = False
-        self.config["project_structure"]["modules_in_src"] = True
-        self.save_config()
-        
-        print("\n✅ CONFIGURAÇÃO INICIAL CONCLUÍDA!")
-        print("\n📋 ESTRUTURA ORGANIZADA:")
-        print("   • Módulos principais: src/")
-        print("   • Dashboard: raiz (dashboard.py)")
-        print("   • Configurações: config/")
-        print("   • Estilos: css/")
-        
-        input("\nPressione Enter para continuar...")
-    
-    def check_project_structure(self):
-        """Verifica e exibe estrutura do projeto"""
-        print("\n📁 VERIFICAÇÃO DA ESTRUTURA DO PROJETO")
-        print("="*50)
-        
-        # Estrutura esperada
-        expected_structure = {
-            "📄 Arquivos principais": [
-                "main.py",
-                "dashboard.py", 
-                "requirements.txt",
-                "README.md"
-            ],
-            "📁 src/ (Módulos principais)": [
-                "src/llm_categorizer.py",
-                "src/google_sheets_sync.py", 
-                "src/advanced_analytics.py",
-                "src/__init__.py"
-            ],
-            "📁 config/ (Configurações)": [
-                "config/settings.py"
-            ],
-            "📁 css/ (Estilos)": [
-                "css/dashboard_styles.css"
-            ],
-            "📁 data/ (Dados)": [
-                "data/raw/",
-                "data/processed/",
-                "data/exports/"
-            ],
-            "📁 credentials/ (Segurança)": [
-                "credentials/",
-                ".env",
-                ".gitignore"
-            ]
-        }
-        
-        for category, files in expected_structure.items():
-            print(f"\n{category}:")
-            for file_path in files:
-                if file_path.endswith('/'):
-                    # É uma pasta
-                    exists = os.path.isdir(file_path)
-                else:
-                    # É um arquivo
-                    exists = os.path.exists(file_path)
-                
-                status = "✅" if exists else "❌"
-                print(f"   {status} {file_path}")
-        
-        # Verificar dados Nubank
-        print(f"\n💳 DADOS NUBANK:")
-        nubank_files = list(Path(".").rglob("Nubank_*.csv"))
-        if nubank_files:
-            print(f"   ✅ {len(nubank_files)} arquivos Nubank encontrados:")
-            for f in nubank_files:
-                print(f"      📄 {f}")
-        else:
-            print(f"   ❌ Nenhum arquivo Nubank_*.csv encontrado")
-        
-        input("\nPressione Enter para continuar...")
-    
-    def show_help(self):
-        """Exibe ajuda e documentação atualizada"""
-        print("\n📖 AJUDA E DOCUMENTAÇÃO - ESTRUTURA src/")
-        print("="*60)
-        
-        help_topics = [
-            ("Dados do Nubank", [
-                "📄 Formato: date, title, amount",
-                "💾 Salvar como: Nubank_YYYYMMDD.csv em data/raw/",
-                "🔧 Processamento automático para cartão Nubank",
-                "📊 Dashboard otimizado para dados de cartão"
-            ]),
-            ("Estrutura do Projeto", [
-                "📁 src/ - Módulos principais (llm_categorizer, google_sheets_sync, advanced_analytics)",
-                "📄 dashboard.py - Interface principal (na raiz)",
-                "📄 main.py - Launcher do sistema (na raiz)",
-                "📁 config/ - Arquivos de configuração",
-                "📁 css/ - Estilos visuais",
-                "📁 data/ - CSVs e dados processados"
-            ]),
-            ("Comandos por Módulo", [
-                "python main.py - Menu principal",
-                "streamlit run dashboard.py - Dashboard direto",
-                "python src/llm_categorizer.py - Categorização",
-                "python src/google_sheets_sync.py - Sincronização",
-                "python src/advanced_analytics.py - Análise avançada"
-            ])
-        ]
-        
-        for topic, items in help_topics:
-            print(f"\n📋 {topic}:")
-            for item in items:
-                print(f"   • {item}")
-        
-        input("\nPressione Enter para continuar...")
-    
-    def refresh_data_status(self):
-        """Atualiza status dos dados e módulos"""
-        print("\n🔄 Atualizando status dos dados e módulos...")
-        self.data_stats = self.check_data_availability()
-        print("✅ Status atualizado!")
-        
-        # Mostrar status dos módulos
-        print(f"\n📊 STATUS DOS MÓDULOS:")
-        for module, status in self.data_stats["modules_status"].items():
-            icon = "✅" if status else "❌"
-            path = self.modules[module]
-            print(f"   {icon} {module}: {path}")
-        
-        # Mostrar dados
-        print(f"\n💾 DADOS:")
-        print(f"   📄 CSVs totais: {self.data_stats['csv_files']}")
-        print(f"   💳 Arquivos Nubank: {self.data_stats['nubank_files']}")
-        
-        if self.data_stats["csv_files"] == 0:
-            print("\n📋 Para adicionar dados:")
-            print("1. Baixe extratos do Nubank em CSV")
-            print("2. Coloque na pasta data/raw/")
-            print("3. Use 'Atualizar Status' novamente")
-        
-        input("Pressione Enter para continuar...")
-    
-    def execute_config(self):
-        """Configurações do sistema"""
-        print("\n🔧 Configurações do Sistema")
-        print("="*40)
-        
-        print("1. Configurar Google Sheets API")
-        print("2. Configurar LLM (OpenAI/Groq)")
-        print("3. Configurar pastas de dados")
-        print("4. Testar conexões")
-        print("5. Voltar ao menu principal")
-        
-        choice = input("\nEscolha (1-5): ").strip()
-        
-        if choice == "1":
-            print("\n📊 Configuração Google Sheets:")
-            print("1. Acesse: https://console.cloud.google.com/")
-            print("2. Crie projeto e habilite Google Sheets API")
-            print("3. Crie Service Account e baixe JSON")
-            print("4. Salve como: credentials/google_credentials.json")
-            
-            if os.path.exists("credentials/google_credentials.json"):
-                print("✅ Credenciais encontradas!")
-                self.config["google_sheets_configured"] = True
-            else:
-                print("❌ Credenciais não encontradas")
-                
-        elif choice == "2":
-            print("\n🤖 Configuração LLM:")
-            provider = input("Provider (groq/openai): ").strip().lower()
-            
-            if provider in ['groq', 'openai']:
-                api_key = input(f"Digite a chave API do {provider.upper()}: ").strip()
-                if api_key:
-                    # Atualizar .env
-                    env_key = "GROQ_API_KEY" if provider == "groq" else "OPENAI_API_KEY"
-                    print(f"💡 Adicione ao .env: {env_key}={api_key}")
-                    self.config["llm_provider"] = provider
-                    
-        elif choice == "4":
-            print("\n🧪 Testando conexões...")
-            
-            # Testar Google Sheets
-            if os.path.exists("credentials/google_credentials.json"):
-                print("✅ Credenciais Google Sheets: OK")
-            else:
-                print("❌ Credenciais Google Sheets: Não encontradas")
-            
-            # Testar dados
-            print(f"📄 Dados CSV: {self.data_stats['csv_files']} arquivos")
-            print(f"💳 Dados Nubank: {self.data_stats['nubank_files']} arquivos")
-        
-        self.save_config()
-        input("Pressione Enter para continuar...")
-    
-    def run(self):
-        """Executa o launcher principal"""
-        try:
-            while True:
-                self.show_welcome_screen()
-                
-                action = self.show_main_menu()
-                
-                if action == "exit":
-                    print("\n👋 Obrigado por usar o Dashboard Financeiro!")
-                    print("💡 Seus dados estão seguros e organizados na estrutura src/")
-                    break
-                elif action == "dashboard":
-                    self.execute_dashboard()
-                elif action == "categorize":
-                    self.execute_categorization()
-                elif action == "sync":
-                    self.execute_sync()
-                elif action == "analyze":
-                    self.execute_analysis()
-                elif action == "setup":
-                    self.execute_setup()
-                elif action == "config":
-                    self.execute_config()
-                elif action == "structure":
-                    self.check_project_structure()
-                elif action == "help":
-                    self.show_help()
-                elif action == "refresh":
-                    self.refresh_data_status()
-                
-                # Salvar configuração após cada ação
-                self.save_config()
-        
-        except KeyboardInterrupt:
-            print("\n\n👋 Saindo...")
-        except Exception as e:
-            print(f"\n❌ Erro inesperado: {e}")
-            print("💡 Verifique se todos os módulos estão na pasta src/")
 
 def main():
     """Função principal"""
-    launcher = FinancialDashboardLauncher()
+    launcher = FinancialDashboardLauncherV5()
     launcher.run()
 
 if __name__ == "__main__":
     main()
 
-# ===== SCRIPTS DE CONVENIÊNCIA ATUALIZADOS =====
+# ===== SCRIPTS DE CONVENIÊNCIA v5.0 =====
 
-def quick_start():
-    """Início rápido para usuários experientes"""
-    print("⚡ INÍCIO RÁPIDO - Estrutura src/")
+def quick_start_v5():
+    """Início rápido v5.0"""
+    print("⚡ INÍCIO RÁPIDO v5.0 - IA INTEGRADA")
     print("Escolha:")
-    print("1. Dashboard")
-    print("2. Categorização (src/)")
-    print("3. Análise (src/)")
-    print("4. Configuração")
+    print("1. 🚀 Dashboard Completo")
+    print("2. 🤖 Chatbot IA")  
+    print("3. ☁️ Google Sheets Avançado")
+    print("4. ⚙️ Configuração Automática")
     
     choice = input("Opção: ").strip()
     
@@ -675,83 +884,89 @@ def quick_start():
         if os.path.exists("dashboard.py"):
             subprocess.run([sys.executable, "-m", "streamlit", "run", "dashboard.py"])
         else:
-            print("❌ dashboard.py não encontrado na raiz")
+            print("❌ dashboard.py não encontrado")
     elif choice == "2":
-        if os.path.exists("src/llm_categorizer.py"):
-            subprocess.run([sys.executable, "src/llm_categorizer.py"])
+        if os.path.exists("chatbot.py"):
+            subprocess.run([sys.executable, "-m", "streamlit", "run", "chatbot.py"])
         else:
-            print("❌ src/llm_categorizer.py não encontrado")
+            print("❌ chatbot.py não encontrado")
     elif choice == "3":
-        if os.path.exists("src/advanced_analytics.py"):
-            subprocess.run([sys.executable, "src/advanced_analytics.py"])
+        if os.path.exists("src/google_sheets_advanced.py"):
+            subprocess.run([sys.executable, "src/google_sheets_advanced.py"])
         else:
-            print("❌ src/advanced_analytics.py não encontrado")
+            print("❌ src/google_sheets_advanced.py não encontrado")
     elif choice == "4":
-        launcher = FinancialDashboardLauncher()
-        launcher.execute_setup()
+        if os.path.exists("auto_setup.py"):
+            subprocess.run([sys.executable, "auto_setup.py"])
+        else:
+            print("❌ auto_setup.py não encontrado")
 
-def check_system():
-    """Verificação rápida do sistema atualizada"""
-    print("🔍 VERIFICAÇÃO DO SISTEMA - Estrutura src/")
+def check_system_v5():
+    """Verificação rápida v5.0"""
+    print("🔍 VERIFICAÇÃO RÁPIDA v5.0")
     print("="*40)
     
-    # Arquivos essenciais
-    essential_files = {
-        "📄 Raiz": ["main.py", "dashboard.py"],
-        "📁 src/": ["src/llm_categorizer.py", "src/google_sheets_sync.py", "src/advanced_analytics.py"],
-        "📁 Outros": ["requirements.txt", "README.md"]
+    # Arquivos v5.0
+    v5_files = {
+        "📄 Principal": ["main.py", "dashboard.py", "chatbot.py"],
+        "📁 Módulos": ["src/llm_categorizer.py", "src/google_sheets_advanced.py", "src/advanced_analytics.py"],
+        "⚙️ Config": ["auto_setup.py", "system_checker.py", "requirements.txt"],
+        "🎨 Interface": ["css/dashboard_styles.css"]
     }
     
-    for category, files in essential_files.items():
+    for category, files in v5_files.items():
         print(f"\n{category}:")
         for file in files:
             status = "✅" if os.path.exists(file) else "❌"
             print(f"   {status} {file}")
     
-    # Dependências
-    print("\n📦 Dependências:")
-    deps = ["streamlit", "pandas", "plotly", "gspread", "numpy"]
-    for dep in deps:
-        try:
-            __import__(dep)
-            print(f"   ✅ {dep}")
-        except ImportError:
-            print(f"   ❌ {dep}")
+    # Funcionalidades v5.0
+    print(f"\n🚀 FUNCIONALIDADES v5.0:")
     
-    # Dados
-    print("\n📊 Dados:")
-    csv_count = len(list(Path(".").rglob("*.csv")))
-    nubank_count = len(list(Path(".").rglob("Nubank_*.csv")))
-    print(f"   📄 CSVs encontrados: {csv_count}")
-    print(f"   💳 Arquivos Nubank: {nubank_count}")
+    # Chatbot
+    chatbot_ready = os.path.exists("chatbot.py")
+    print(f"   🤖 Chatbot IA: {'✅' if chatbot_ready else '❌'}")
     
-    # Estrutura
-    print("\n📁 Estrutura:")
-    folders = ["src", "data/raw", "config", "css", "credentials"]
-    for folder in folders:
-        status = "✅" if os.path.exists(folder) else "❌"
-        print(f"   {status} {folder}/")
+    # Google Sheets avançado
+    sheets_advanced = os.path.exists("src/google_sheets_advanced.py") and os.path.exists("credentials/google_credentials.json")
+    print(f"   ☁️ Google Sheets Avançado: {'✅' if sheets_advanced else '❌'}")
+    
+    # CSS otimizado
+    css_optimized = False
+    if os.path.exists("css/dashboard_styles.css"):
+        with open("css/dashboard_styles.css", 'r', encoding='utf-8') as f:
+            css_content = f.read()
+            css_optimized = "prefers-color-scheme" in css_content
+    print(f"   🎨 CSS Otimizado: {'✅' if css_optimized else '❌'}")
+    
+    # IA configurada
+    ai_ready = False
+    if os.path.exists(".env"):
+        with open(".env", 'r', encoding='utf-8') as f:
+            env_content = f.read()
+            ai_ready = ("GROQ_API_KEY=" in env_content and len(env_content.split("GROQ_API_KEY=")[1].split("\n")[0].strip()) > 0) or \
+                      ("OPENAI_API_KEY=" in env_content and len(env_content.split("OPENAI_API_KEY=")[1].split("\n")[0].strip()) > 0)
+    print(f"   🧠 IA Configurada: {'✅' if ai_ready else '❌'}")
 
-# Para execução direta com estrutura src/
+# Para execução direta com parâmetros v5.0
 if len(sys.argv) > 1:
     command = sys.argv[1].lower()
     
     if command == "quick":
-        quick_start()
+        quick_start_v5()
     elif command == "check":
-        check_system()
+        check_system_v5()
     elif command == "dashboard":
         if os.path.exists("dashboard.py"):
             subprocess.run([sys.executable, "-m", "streamlit", "run", "dashboard.py"])
-        else:
-            print("❌ dashboard.py não encontrado na raiz")
-    elif command == "analyze":
-        if os.path.exists("src/advanced_analytics.py"):
-            subprocess.run([sys.executable, "src/advanced_analytics.py"])
-        else:
-            print("❌ src/advanced_analytics.py não encontrado")
+    elif command == "chatbot":
+        if os.path.exists("chatbot.py"):
+            subprocess.run([sys.executable, "-m", "streamlit", "run", "chatbot.py"])
+    elif command == "setup":
+        if os.path.exists("auto_setup.py"):
+            subprocess.run([sys.executable, "auto_setup.py"])
     else:
         print(f"Comando desconhecido: {command}")
-        print("Comandos disponíveis: quick, check, dashboard, analyze")
+        print("Comandos v5.0: quick, check, dashboard, chatbot, setup")
 else:
     main()
