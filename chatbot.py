@@ -69,14 +69,14 @@ class FinancialChatbot:
         try:
             if groq_key:
                 self.llm = ChatGroq(
-                    model="llama-3.1-70b-versatile",
+                    model="llama-3.3-70b-versatile",
                     temperature=0.1,
                     api_key=groq_key
                 )
                 st.session_state.llm_provider = "Groq (Llama)"
             elif openai_key:
                 self.llm = ChatOpenAI(
-                    model="gpt-3.5-turbo",
+                    model="gpt-4o-mini",
                     temperature=0.1,
                     api_key=openai_key
                 )

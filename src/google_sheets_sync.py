@@ -1,5 +1,6 @@
 """
 Google Sheets Sync - Módulo para sincronização com Google Sheets
+Atualizado com emails corretos e melhorias v5.0
 Execute: python google_sheets_sync.py
 """
 
@@ -21,6 +22,13 @@ class GoogleSheetsSync:
         self.credentials_path = credentials_path
         self.client = None
         self.spreadsheet = None
+        
+        # Emails configurados para compartilhamento automático
+        self.share_emails = [
+            'matheusbnas@gmail.com',
+            'dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com'
+        ]
+        
         self.connect()
     
     def connect(self):
@@ -35,6 +43,9 @@ class GoogleSheetsSync:
                 print("3. Habilite Google Sheets API e Google Drive API")
                 print("4. Crie credenciais de Service Account")
                 print("5. Baixe o JSON e coloque em 'credentials/google_credentials.json'")
+                print("\n📧 Emails configurados para acesso automático:")
+                for email in self.share_emails:
+                    print(f"   • {email}")
                 return False
             
             # Configurar escopos
@@ -52,6 +63,7 @@ class GoogleSheetsSync:
             # Autorizar cliente
             self.client = gspread.authorize(creds)
             print("✅ Conectado ao Google Sheets com sucesso!")
+            print(f"📧 Compartilhamento automático ativo para: {', '.join(self.share_emails)}")
             return True
             
         except Exception as e:
@@ -78,12 +90,31 @@ class GoogleSheetsSync:
                 # Criar nova planilha
                 self.spreadsheet = self.client.create(spreadsheet_name)
                 print(f"📊 Nova planilha '{spreadsheet_name}' criada!")
+                
+                # Compartilhar automaticamente com emails configurados
+                self.share_spreadsheet_with_emails()
             
             return True
             
         except Exception as e:
             print(f"❌ Erro ao abrir/criar planilha: {e}")
             return False
+    
+    def share_spreadsheet_with_emails(self):
+        """Compartilha planilha com emails configurados"""
+        if not self.spreadsheet:
+            return
+        
+        try:
+            for email in self.share_emails:
+                try:
+                    self.spreadsheet.share(email, perm_type='user', role='writer')
+                    print(f"✅ Planilha compartilhada com {email}")
+                except Exception as e:
+                    print(f"⚠️ Erro ao compartilhar com {email}: {e}")
+                    
+        except Exception as e:
+            print(f"❌ Erro no compartilhamento: {e}")
     
     def upload_dataframe(self, df, worksheet_name, clear_first=True):
         """
@@ -143,6 +174,14 @@ class GoogleSheetsSync:
             # Upload dados
             worksheet.update(data, value_input_option='USER_ENTERED')
             
+            # Formatação básica do cabeçalho
+            header_range = f"A1:{chr(65 + len(headers) - 1)}1"
+            worksheet.format(header_range, {
+                'backgroundColor': {'red': 0.2, 'green': 0.4, 'blue': 0.8},
+                'textFormat': {'bold': True, 'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}},
+                'horizontalAlignment': 'CENTER'
+            })
+            
             print(f"✅ Dados enviados para aba '{worksheet_name}' ({len(df)} linhas)")
             return True
             
@@ -175,7 +214,7 @@ class GoogleSheetsSync:
             monthly_pivot['Taxa_Poupanca_%'] = (monthly_pivot['Saldo'] / monthly_pivot.get('Receita', 1) * 100).round(2)
             
             monthly_pivot_reset = monthly_pivot.reset_index()
-            self.upload_dataframe(monthly_pivot_reset, "Resumo_Mensal")
+            self.upload_dataframe(monthly_pivot_reset, "📅 Resumo_Mensal")
             
         except Exception as e:
             print(f"❌ Erro no resumo mensal: {e}")
@@ -189,7 +228,7 @@ class GoogleSheetsSync:
             category_summary.columns = ['Total', 'Quantidade', 'Media']
             category_summary = category_summary.sort_values('Total', ascending=False).reset_index()
             
-            self.upload_dataframe(category_summary, "Resumo_Categorias")
+            self.upload_dataframe(category_summary, "🏷️ Resumo_Categorias")
             
         except Exception as e:
             print(f"❌ Erro no resumo por categoria: {e}")
@@ -207,7 +246,7 @@ class GoogleSheetsSync:
                     values='Valor_Absoluto'
                 ).fillna(0).reset_index()
                 
-                self.upload_dataframe(fixed_var_pivot, "Custos_Fixos_vs_Variaveis")
+                self.upload_dataframe(fixed_var_pivot, "💡 Custos_Fixos_vs_Variaveis")
                 
             except Exception as e:
                 print(f"❌ Erro no resumo fixos vs variáveis: {e}")
@@ -218,10 +257,30 @@ class GoogleSheetsSync:
             top_expenses_clean = top_expenses[['Data', 'Descrição', 'Categoria', 'Valor_Absoluto']].copy()
             top_expenses_clean['Data'] = top_expenses_clean['Data'].dt.strftime('%d/%m/%Y')
             
-            self.upload_dataframe(top_expenses_clean, "Top_50_Gastos")
+            self.upload_dataframe(top_expenses_clean, "🔝 Top_50_Gastos")
             
         except Exception as e:
             print(f"❌ Erro no top gastos: {e}")
+        
+        # 5. Estabelecimentos (se for dados Nubank)
+        if 'Descrição' in df.columns:
+            try:
+                establishment_analysis = df.groupby('Descrição').agg({
+                    'Valor_Absoluto': ['sum', 'mean', 'count'],
+                    'Data': ['min', 'max']
+                }).round(2)
+                
+                establishment_analysis.columns = ['Total_Gasto', 'Gasto_Medio', 'Frequencia', 'Primeira_Compra', 'Ultima_Compra']
+                establishment_analysis = establishment_analysis.sort_values('Frequencia', ascending=False).reset_index()
+                
+                # Formatar datas
+                establishment_analysis['Primeira_Compra'] = pd.to_datetime(establishment_analysis['Primeira_Compra']).dt.strftime('%d/%m/%Y')
+                establishment_analysis['Ultima_Compra'] = pd.to_datetime(establishment_analysis['Ultima_Compra']).dt.strftime('%d/%m/%Y')
+                
+                self.upload_dataframe(establishment_analysis.head(100), "🏪 Estabelecimentos")
+                
+            except Exception as e:
+                print(f"❌ Erro na análise de estabelecimentos: {e}")
         
         return True
 
@@ -229,8 +288,9 @@ def load_financial_data():
     """Carrega dados financeiros dos CSVs"""
     print("📁 Procurando arquivos CSV...")
     
-    # Padrões de busca
+    # Padrões de busca priorizando Nubank
     csv_patterns = [
+        "Nubank_*.csv",  # Prioritário
         "*.csv",
         "data/*.csv", 
         "data/raw/*.csv",
@@ -238,23 +298,36 @@ def load_financial_data():
     ]
     
     all_files = []
+    nubank_files = []
+    
     for pattern in csv_patterns:
         files = glob.glob(pattern)
         all_files.extend(files)
+        if "Nubank_" in pattern:
+            nubank_files.extend(files)
+    
+    # Remover duplicatas
+    all_files = list(dict.fromkeys(all_files))
     
     if not all_files:
         print("❌ Nenhum arquivo CSV encontrado!")
-        print("📋 Coloque seus CSVs do Nubank em uma das pastas:")
+        print("📋 Coloque seus extratos do Nubank em uma das pastas:")
         print("   - Pasta atual")
         print("   - data/ ou data/raw/")
         print("   - extratos/")
         return pd.DataFrame()
     
+    # Priorizar arquivos Nubank se existirem
+    files_to_process = nubank_files if nubank_files else all_files
+    is_nubank_data = len(nubank_files) > 0
+    
     print(f"📄 Encontrados {len(all_files)} arquivo(s) CSV")
+    if is_nubank_data:
+        print(f"💳 {len(nubank_files)} arquivo(s) Nubank detectado(s)")
     
     # Carregar e combinar CSVs
     dfs = []
-    for file in all_files:
+    for file in files_to_process:
         try:
             # Tentar diferentes encodings
             encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252']
@@ -283,39 +356,57 @@ def load_financial_data():
     # Combinar DataFrames
     combined_df = pd.concat(dfs, ignore_index=True)
     
-    # Processar dados
+    # Processar dados baseado no formato detectado
     print("🔧 Processando dados...")
     
-    # Converter data
-    combined_df['Data'] = pd.to_datetime(combined_df['Data'], errors='coerce')
-    combined_df = combined_df.dropna(subset=['Data'])
+    # Detectar formato Nubank
+    is_nubank_format = all(col in combined_df.columns for col in ['date', 'title', 'amount'])
+    
+    if is_nubank_format:
+        # Formato Nubank: date, title, amount
+        combined_df['Data'] = pd.to_datetime(combined_df['date'], errors='coerce')
+        combined_df['Descrição'] = combined_df['title'].fillna('Sem descrição')
+        combined_df['Valor'] = pd.to_numeric(combined_df['amount'], errors='coerce')
+        
+        # No Nubank: negativos = despesas, positivos = receitas/estornos
+        combined_df['Tipo'] = combined_df['Valor'].apply(lambda x: 'Receita' if x > 0 else 'Despesa')
+        
+        print("💳 Formato Nubank processado")
+    else:
+        # Formato tradicional
+        combined_df['Data'] = pd.to_datetime(combined_df['Data'], errors='coerce')
+        combined_df['Valor'] = pd.to_numeric(combined_df['Valor'], errors='coerce')
+        combined_df['Tipo'] = combined_df['Valor'].apply(lambda x: 'Receita' if x > 0 else 'Despesa')
+        
+        print("🏦 Formato bancário tradicional processado")
+    
+    # Limpar dados inválidos
+    combined_df = combined_df.dropna(subset=['Data', 'Valor'])
     
     # Criar colunas auxiliares
     combined_df['Mes_Str'] = combined_df['Data'].dt.strftime('%Y-%m')
     combined_df['Ano'] = combined_df['Data'].dt.year
-    
-    # Processar valores
-    combined_df['Valor'] = pd.to_numeric(combined_df['Valor'], errors='coerce')
-    combined_df = combined_df.dropna(subset=['Valor'])
-    
-    # Classificar receitas e despesas
-    combined_df['Tipo'] = combined_df['Valor'].apply(lambda x: 'Receita' if x > 0 else 'Despesa')
     combined_df['Valor_Absoluto'] = combined_df['Valor'].abs()
     
-    # Limpar dados
-    if 'Descrição' in combined_df.columns:
+    # Limpar e preencher campos
+    if 'Descrição' not in combined_df.columns:
+        combined_df['Descrição'] = 'Sem descrição'
+    else:
         combined_df['Descrição'] = combined_df['Descrição'].fillna('Sem descrição')
     
-    if 'Categoria' in combined_df.columns:
-        combined_df['Categoria'] = combined_df['Categoria'].fillna('Outros')
-    else:
+    if 'Categoria' not in combined_df.columns:
         combined_df['Categoria'] = 'Outros'
+    else:
+        combined_df['Categoria'] = combined_df['Categoria'].fillna('Outros')
     
     # Identificar custos fixos (básico)
     combined_df['Custo_Tipo'] = 'Variável'
     
     # Padrões de custos fixos
-    fixed_patterns = ['FERREIRA IMOVEIS', 'ESCOLA', 'CLARO', 'TIM', 'MENSALIDADE']
+    fixed_patterns = [
+        'FERREIRA IMOVEIS', 'ESCOLA', 'CLARO', 'TIM', 'MENSALIDADE',
+        'ALUGUEL', 'CONDOMINIO', 'NETFLIX', 'SPOTIFY', 'INTERNET'
+    ]
     
     if 'Descrição' in combined_df.columns:
         for pattern in fixed_patterns:
@@ -333,8 +424,10 @@ def load_financial_data():
 
 def main():
     """Função principal"""
-    print("🚀 Sincronização com Google Sheets")
-    print("=" * 40)
+    print("🚀 Sincronização com Google Sheets v5.0")
+    print("📧 Emails configurados: matheusbnas@gmail.com")
+    print("🤖 Service Account: dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com")
+    print("=" * 70)
     
     # Carregar dados
     df = load_financial_data()
@@ -362,7 +455,7 @@ def main():
     
     # Upload dos dados principais
     print("\n📤 Enviando dados principais...")
-    success = sync.upload_dataframe(df, "Dados_Completos")
+    success = sync.upload_dataframe(df, "📊 Dados_Completos")
     
     if success:
         # Criar planilhas de resumo
@@ -370,7 +463,7 @@ def main():
         sync.create_summary_sheets(df)
         
         print("\n✅ SINCRONIZAÇÃO CONCLUÍDA!")
-        print(f"🔗 Acesse sua planilha em: https://docs.google.com/spreadsheets/")
+        print(f"🔗 Acesse sua planilha em: {sync.spreadsheet.url}")
         print(f"📊 Nome da planilha: {spreadsheet_name}")
         
         # Estatísticas finais
@@ -386,6 +479,18 @@ def main():
         print(f"   • Total Despesas: R$ {total_despesas:,.2f}")
         print(f"   • Saldo Total: R$ {saldo_total:,.2f}")
         
+        # Detectar formato
+        is_nubank = 'amount' in df.columns or any('Nubank' in str(f) for f in df.get('arquivo_origem', []))
+        if is_nubank:
+            print(f"   • Formato: Nubank (otimizado)")
+            print(f"   • Estabelecimentos únicos: {df['Descrição'].nunique()}")
+        else:
+            print(f"   • Formato: Bancário tradicional")
+        
+        print(f"\n📧 Planilha compartilhada automaticamente com:")
+        for email in sync.share_emails:
+            print(f"   • {email}")
+        
     else:
         print("❌ Falha na sincronização")
 
@@ -396,20 +501,26 @@ if __name__ == "__main__":
 
 def quick_sync():
     """Sincronização rápida sem interação do usuário"""
-    print("⚡ Sincronização Rápida")
+    print("⚡ Sincronização Rápida v5.0")
     
     # Carregar dados
     df = load_financial_data()
     if df.empty:
-        return
+        return False
     
     # Conectar e sincronizar
     sync = GoogleSheetsSync()
     if sync.client:
-        sync.create_or_open_spreadsheet("Dashboard Financeiro")
-        sync.upload_dataframe(df, "Dados_Completos")
+        spreadsheet_name = f"Dashboard Financeiro {datetime.now().strftime('%Y')}"
+        sync.create_or_open_spreadsheet(spreadsheet_name)
+        sync.upload_dataframe(df, "📊 Dados_Completos")
         sync.create_summary_sheets(df)
-        print("✅ Sincronização rápida concluída!")
+        print(f"✅ Sincronização rápida concluída!")
+        print(f"🔗 Link: {sync.spreadsheet.url}")
+        return True
+    else:
+        print("❌ Falha na conexão")
+        return False
 
 # Para execução rápida, descomente a linha abaixo:
 # quick_sync()

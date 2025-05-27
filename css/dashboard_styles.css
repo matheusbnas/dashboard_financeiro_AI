@@ -1,172 +1,290 @@
 /* ==============================================
-   DASHBOARD FINANCEIRO - ESTILOS OTIMIZADOS V2
-   Compatibilidade TOTAL com temas claro e escuro
+   DASHBOARD FINANCEIRO - CSS SIMPLIFICADO V3
+   Foco em legibilidade e compatibilidade total
    ============================================== */
 
-/* ============= VARIÁVEIS DE CORES INTELIGENTES ============= */
-:root {
-  /* Cores adaptáveis - modo claro */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #e9ecef;
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --text-muted: #868e96;
-  
-  /* Cores de interface */
-  --border-color: #dee2e6;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-  --shadow-hover: rgba(0, 0, 0, 0.15);
-  
-  /* Cores funcionais (sempre visíveis) */
-  --accent-blue: #0066cc;
-  --accent-green: #28a745;
-  --accent-red: #dc3545;
-  --accent-orange: #fd7e14;
-  --accent-purple: #6f42c1;
-  --accent-nubank: #8b2fff;
-  
-  /* Gradientes adaptativos */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-success: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  --gradient-danger: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
-  --gradient-nubank: linear-gradient(135deg, #8b2fff 0%, #a855f7 100%);
-  
-  /* Transparências para sobreposições */
-  --overlay-light: rgba(255, 255, 255, 0.9);
-  --overlay-dark: rgba(0, 0, 0, 0.8);
-  
-  /* Transições */
-  --transition-fast: all 0.2s ease;
-  --transition-normal: all 0.3s ease;
-  --border-radius: 12px;
-}
-
-/* ============= DETECÇÃO AUTOMÁTICA DE TEMA ESCURO ============= */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #0d1117;
-    --bg-secondary: #161b22;
-    --bg-tertiary: #21262d;
-    --text-primary: #f0f6fc;
-    --text-secondary: #8b949e;
-    --text-muted: #656d76;
-    
-    --border-color: #30363d;
-    --shadow-color: rgba(0, 0, 0, 0.3);
-    --shadow-hover: rgba(0, 0, 0, 0.5);
-    
-    /* Cores funcionais ajustadas para escuro */
-    --accent-blue: #58a6ff;
-    --accent-green: #3fb950;
-    --accent-red: #f85149;
-    --accent-orange: #ff8c42;
-    --accent-purple: #a5a4ff;
-    --accent-nubank: #b794f6;
-    
-    --overlay-light: rgba(13, 17, 23, 0.9);
-    --overlay-dark: rgba(240, 246, 252, 0.1);
-  }
-}
-
-/* Forçar tema escuro quando detectado pelo Streamlit */
-[data-theme="dark"], 
-.stApp[data-theme="dark"],
-html[data-theme="dark"] {
-  --bg-primary: #0d1117 !important;
-  --bg-secondary: #161b22 !important;
-  --bg-tertiary: #21262d !important;
-  --text-primary: #f0f6fc !important;
-  --text-secondary: #8b949e !important;
-  --text-muted: #656d76 !important;
-  --border-color: #30363d !important;
-}
-
-/* ============= BASE RESET E APLICAÇÃO ============= */
+/* ============= RESET BÁSICO ============= */
 * {
   box-sizing: border-box;
+  transition: all 0.2s ease;
 }
 
-.stApp {
-  background-color: var(--bg-primary) !important;
-  color: var(--text-primary) !important;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
-  transition: var(--transition-normal) !important;
-}
-
-/* Garantir que TODOS os textos sejam legíveis */
-body, div, p, span, h1, h2, h3, h4, h5, h6, 
-label, button, input, textarea, select,
-.stMarkdown, .stMarkdown *, 
-.stText, .stText *,
-[data-testid] * {
-  color: var(--text-primary) !important;
-  transition: var(--transition-fast) !important;
-}
-
-/* Textos secundários */
-.text-secondary,
-.stMarkdown .text-secondary,
-small, .small {
-  color: var(--text-secondary) !important;
-}
-
-/* Textos silenciados */
-.text-muted,
-.stMarkdown .text-muted {
-  color: var(--text-muted) !important;
+/* ============= CORES E VARIÁVEIS ============= */
+:root {
+  /* Cores neutras - sempre legíveis */
+  --primary-blue: #1f77b4;
+  --success-green: #2ca02c;
+  --warning-orange: #ff7f0e;
+  --danger-red: #d62728;
+  --purple-accent: #9467bd;
+  --nubank-purple: #8a2be2;
+  
+  /* Sombras e bordas */
+  --light-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --medium-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --border-radius: 8px;
+  
+  /* Spacing */
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
 }
 
 /* ============= HEADER PRINCIPAL ============= */
 .main-header {
-  background: var(--gradient-primary) !important;
-  padding: 2.5rem 2rem !important;
+  background: linear-gradient(135deg, var(--primary-blue), var(--purple-accent)) !important;
+  color: white !important;
+  padding: var(--spacing-xl) var(--spacing-lg) !important;
   border-radius: var(--border-radius) !important;
-  color: white !important;
-  margin-bottom: 2rem !important;
+  margin-bottom: var(--spacing-lg) !important;
   text-align: center !important;
-  box-shadow: 0 8px 32px var(--shadow-color) !important;
-  border: 1px solid var(--border-color) !important;
-  transition: var(--transition-normal) !important;
+  box-shadow: var(--medium-shadow) !important;
 }
 
-.main-header:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 12px 40px var(--shadow-hover) !important;
-}
-
-.main-header h1, .main-header p {
+.main-header h1,
+.main-header p {
   color: white !important;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  margin: 0 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* ============= SIDEBAR MELHORADO ============= */
+.main-header h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+/* ============= CARDS DE MÉTRICAS ============= */
+[data-testid="metric-container"] {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 2px solid #e1e5e9 !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-lg) !important;
+  box-shadow: var(--light-shadow) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+[data-testid="metric-container"]:hover {
+  border-color: var(--primary-blue) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--medium-shadow) !important;
+}
+
+/* Labels das métricas - sempre visíveis */
+[data-testid="metric-container"] label,
+.stMetric > label {
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+}
+
+/* Valores das métricas - sempre legíveis */
+[data-testid="metric-value"],
+.stMetric [data-testid="metric-value"] {
+  color: #111827 !important;
+  font-size: 1.875rem !important;
+  font-weight: 700 !important;
+}
+
+/* Deltas das métricas */
+[data-testid="metric-delta"] {
+  font-weight: 600 !important;
+}
+
+/* ============= INDICADORES E ALERTAS ============= */
+.nubank-mode-indicator {
+  background: linear-gradient(135deg, var(--nubank-purple), rgba(138, 43, 226, 0.1)) !important;
+  border: 2px solid var(--nubank-purple) !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-lg) !important;
+  margin: var(--spacing-md) 0 !important;
+  color: white !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.nubank-mode-indicator h4 {
+  color: white !important;
+  font-weight: 700 !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.nubank-mode-indicator p,
+.nubank-mode-indicator li {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Alertas com cores sólidas */
+.stSuccess {
+  background: rgba(46, 160, 67, 0.1) !important;
+  border: 2px solid var(--success-green) !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-lg) !important;
+  color: #065f46 !important;
+}
+
+.stWarning {
+  background: rgba(255, 127, 14, 0.1) !important;
+  border: 2px solid var(--warning-orange) !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-lg) !important;
+  color: #92400e !important;
+}
+
+.stError {
+  background: rgba(214, 39, 40, 0.1) !important;
+  border: 2px solid var(--danger-red) !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-lg) !important;
+  color: #991b1b !important;
+}
+
+.stInfo {
+  background: rgba(31, 119, 180, 0.1) !important;
+  border: 2px solid var(--primary-blue) !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-lg) !important;
+  color: #1e40af !important;
+}
+
+/* ============= BOTÕES SEMPRE VISÍVEIS ============= */
+.stButton > button {
+  background: linear-gradient(135deg, var(--primary-blue), #1e40af) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--border-radius) !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  box-shadow: var(--light-shadow) !important;
+  cursor: pointer !important;
+}
+
+.stButton > button:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: var(--medium-shadow) !important;
+  background: linear-gradient(135deg, #1e40af, var(--primary-blue)) !important;
+}
+
+/* Botão específico do Google Sheets */
+.google-sheets-button {
+  background: linear-gradient(135deg, var(--success-green), #16a34a) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  box-shadow: var(--light-shadow) !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  margin: var(--spacing-md) 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--spacing-sm) !important;
+}
+
+.google-sheets-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--medium-shadow) !important;
+  background: linear-gradient(135deg, #16a34a, var(--success-green)) !important;
+}
+
+/* ============= TABS MELHORADAS ============= */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 4px !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  border-radius: var(--border-radius) !important;
+  padding: 4px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+  border-radius: 6px !important;
+  padding: 0.75rem 1.25rem !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: var(--primary-blue) !important;
+}
+
+.stTabs [aria-selected="true"] {
+  background: var(--primary-blue) !important;
+  color: white !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+/* ============= TABELAS LEGÍVEIS ============= */
+.stDataFrame {
+  border-radius: var(--border-radius) !important;
+  overflow: hidden !important;
+  box-shadow: var(--light-shadow) !important;
+  background: white !important;
+}
+
+.stDataFrame table {
+  background: white !important;
+  width: 100% !important;
+}
+
+.stDataFrame thead th {
+  background: var(--primary-blue) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  padding: var(--spacing-md) !important;
+  text-align: left !important;
+  border: none !important;
+}
+
+.stDataFrame tbody td {
+  padding: 0.75rem var(--spacing-md) !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  color: #374151 !important;
+  background: white !important;
+}
+
+.stDataFrame tbody tr:nth-child(even) {
+  background: #f9fafb !important;
+}
+
+.stDataFrame tbody tr:hover {
+  background: #f3f4f6 !important;
+}
+
+/* ============= SIDEBAR LIMPO ============= */
 .stSidebar {
-  background-color: var(--bg-secondary) !important;
-  border-right: 2px solid var(--border-color) !important;
-  box-shadow: 4px 0 12px var(--shadow-color) !important;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  border-right: 1px solid #e2e8f0 !important;
 }
 
-.stSidebar .stMarkdown,
-.stSidebar .stMarkdown *,
-.stSidebar label,
-.stSidebar [data-testid] * {
-  color: var(--text-primary) !important;
-  background-color: transparent !important;
+.stSidebar .stMarkdown h1,
+.stSidebar .stMarkdown h2,
+.stSidebar .stMarkdown h3,
+.stSidebar .stMarkdown p {
+  color: #1e293b !important;
 }
 
 /* Menu de navegação no sidebar */
 .nav-menu {
-  background: var(--bg-tertiary) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
   border-radius: var(--border-radius) !important;
-  padding: 1rem !important;
-  margin: 1rem 0 !important;
-  border: 1px solid var(--border-color) !important;
+  padding: var(--spacing-md) !important;
+  margin: var(--spacing-md) 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .nav-menu h3 {
-  color: var(--text-primary) !important;
-  margin-bottom: 0.5rem !important;
+  color: #1e293b !important;
+  margin-bottom: var(--spacing-sm) !important;
   font-size: 1.1rem !important;
   font-weight: 600 !important;
 }
@@ -174,243 +292,23 @@ small, .small {
 .nav-button {
   display: block !important;
   width: 100% !important;
-  padding: 0.75rem 1rem !important;
+  padding: 0.75rem var(--spacing-md) !important;
   margin: 0.25rem 0 !important;
-  background: var(--bg-primary) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 8px !important;
+  background: white !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
   text-decoration: none !important;
-  transition: var(--transition-fast) !important;
   cursor: pointer !important;
+  font-weight: 500 !important;
 }
 
 .nav-button:hover {
-  background: var(--accent-blue) !important;
+  background: var(--primary-blue) !important;
   color: white !important;
+  border-color: var(--primary-blue) !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px var(--shadow-hover) !important;
-}
-
-.nav-button.active {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  border-color: transparent !important;
-}
-
-/* ============= CARDS E MÉTRICAS LEGÍVEIS ============= */
-[data-testid="metric-container"] {
-  background: var(--bg-secondary) !important;
-  border: 2px solid var(--border-color) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1.5rem !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-  transition: var(--transition-normal) !important;
-}
-
-[data-testid="metric-container"]:hover {
-  border-color: var(--accent-blue) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 30px var(--shadow-hover) !important;
-}
-
-/* Labels das métricas */
-[data-testid="metric-container"] label,
-.stMetric > label {
-  color: var(--text-secondary) !important;
-  font-weight: 600 !important;
-  font-size: 0.9rem !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  background-color: transparent !important;
-}
-
-/* Valores das métricas */
-[data-testid="metric-value"],
-.stMetric [data-testid="metric-value"] {
-  color: var(--text-primary) !important;
-  font-size: 2rem !important;
-  font-weight: 700 !important;
-  background-color: transparent !important;
-}
-
-/* Deltas das métricas */
-[data-testid="metric-delta"],
-.stMetric [data-testid="metric-delta"] {
-  font-weight: 600 !important;
-  background-color: transparent !important;
-}
-
-/* ============= ALERTAS COM CONTRASTE PERFEITO ============= */
-.stSuccess, .success-box {
-  background: linear-gradient(135deg, var(--accent-green), rgba(40, 167, 69, 0.1)) !important;
-  border: 2px solid var(--accent-green) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1.2rem !important;
-  margin: 1rem 0 !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-}
-
-.stWarning, .warning-box {
-  background: linear-gradient(135deg, var(--accent-orange), rgba(253, 126, 20, 0.1)) !important;
-  border: 2px solid var(--accent-orange) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1.2rem !important;
-  margin: 1rem 0 !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-}
-
-.stInfo, .info-box {
-  background: linear-gradient(135deg, var(--accent-blue), rgba(0, 102, 204, 0.1)) !important;
-  border: 2px solid var(--accent-blue) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1.2rem !important;
-  margin: 1rem 0 !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-}
-
-.stError, .error-box {
-  background: linear-gradient(135deg, var(--accent-red), rgba(220, 53, 69, 0.1)) !important;
-  border: 2px solid var(--accent-red) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1.2rem !important;
-  margin: 1rem 0 !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-}
-
-/* Textos dentro de alertas sempre legíveis */
-.stSuccess *, .stWarning *, .stInfo *, .stError *,
-.success-box *, .warning-box *, .info-box *, .error-box * {
-  color: var(--text-primary) !important;
-  background-color: transparent !important;
-}
-
-/* ============= TABS MELHORADAS ============= */
-.stTabs [data-baseweb="tab-list"] {
-  gap: 8px !important;
-  background: var(--bg-secondary) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 0.5rem !important;
-  border: 1px solid var(--border-color) !important;
-}
-
-.stTabs [data-baseweb="tab"] {
-  border-radius: 8px !important;
-  padding: 0.8rem 1.5rem !important;
-  font-weight: 600 !important;
-  transition: var(--transition-fast) !important;
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  color: var(--text-secondary) !important;
-}
-
-.stTabs [data-baseweb="tab"]:hover {
-  background: var(--accent-blue) !important;
-  color: white !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px var(--shadow-hover) !important;
-}
-
-.stTabs [aria-selected="true"] {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 16px var(--shadow-color) !important;
-}
-
-/* ============= TABELAS LEGÍVEIS ============= */
-.stDataFrame {
-  border: none !important;
-  border-radius: var(--border-radius) !important;
-  overflow: hidden !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-  background: var(--bg-primary) !important;
-}
-
-.stDataFrame table {
-  background: var(--bg-primary) !important;
-  color: var(--text-primary) !important;
-  width: 100% !important;
-}
-
-.stDataFrame thead th {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  font-weight: 700 !important;
-  padding: 1rem !important;
-  text-align: left !important;
-  border: none !important;
-}
-
-.stDataFrame tbody td {
-  padding: 0.8rem 1rem !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  color: var(--text-primary) !important;
-  background: var(--bg-primary) !important;
-}
-
-.stDataFrame tbody tr:hover {
-  background: var(--bg-secondary) !important;
-}
-
-.stDataFrame tbody tr:nth-child(even) {
-  background: var(--bg-secondary) !important;
-}
-
-.stDataFrame tbody tr:nth-child(even):hover {
-  background: var(--bg-tertiary) !important;
-}
-
-/* ============= BOTÕES SEMPRE VISÍVEIS ============= */
-.stButton > button {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: var(--border-radius) !important;
-  padding: 0.8rem 2rem !important;
-  font-weight: 600 !important;
-  font-size: 1rem !important;
-  transition: var(--transition-normal) !important;
-  box-shadow: 0 4px 16px var(--shadow-color) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  cursor: pointer !important;
-}
-
-.stButton > button:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 24px var(--shadow-hover) !important;
-  filter: brightness(110%) !important;
-}
-
-.stButton > button:active {
-  transform: translateY(0) !important;
-}
-
-/* Botões específicos */
-.stDownloadButton > button {
-  background: var(--gradient-success) !important;
-  color: white !important;
-}
-
-.google-sheets-button {
-  background: var(--gradient-success) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1rem 2rem !important;
-  font-weight: 600 !important;
-  font-size: 1.1rem !important;
-  transition: var(--transition-normal) !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
+  box-shadow: var(--light-shadow) !important;
 }
 
 /* ============= INPUTS LEGÍVEIS ============= */
@@ -419,12 +317,11 @@ small, .small {
 .stMultiSelect > div > div > div,
 .stNumberInput > div > div > input,
 .stDateInput > div > div > input {
-  background: var(--bg-secondary) !important;
-  border: 2px solid var(--border-color) !important;
-  border-radius: 8px !important;
-  color: var(--text-primary) !important;
-  padding: 0.8rem !important;
-  transition: var(--transition-fast) !important;
+  background: white !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 6px !important;
+  color: #374151 !important;
+  padding: 0.75rem !important;
 }
 
 .stTextInput > div > div > input:focus,
@@ -432,9 +329,8 @@ small, .small {
 .stMultiSelect > div > div > div:focus,
 .stNumberInput > div > div > input:focus,
 .stDateInput > div > div > input:focus {
-  border-color: var(--accent-blue) !important;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.2) !important;
-  background: var(--bg-primary) !important;
+  border-color: var(--primary-blue) !important;
+  box-shadow: 0 0 0 3px rgba(31, 119, 180, 0.1) !important;
 }
 
 /* Labels dos inputs */
@@ -443,118 +339,65 @@ small, .small {
 .stMultiSelect > label,
 .stNumberInput > label,
 .stDateInput > label {
-  color: var(--text-primary) !important;
+  color: #374151 !important;
   font-weight: 600 !important;
-  margin-bottom: 0.5rem !important;
+  margin-bottom: var(--spacing-sm) !important;
 }
 
-/* ============= GRÁFICOS INTEGRADOS ============= */
+/* ============= GRÁFICOS ============= */
 .js-plotly-plot {
   border-radius: var(--border-radius) !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
+  box-shadow: var(--light-shadow) !important;
   overflow: hidden !important;
-  background: var(--bg-primary) !important;
-  border: 1px solid var(--border-color) !important;
+  background: white !important;
 }
 
-/* ============= EXPANSORES LEGÍVEIS ============= */
+/* ============= EXPANSORES ============= */
 .streamlit-expanderHeader {
-  background: var(--bg-secondary) !important;
+  background: rgba(248, 250, 252, 0.9) !important;
   border-radius: var(--border-radius) !important;
-  border: 2px solid var(--border-color) !important;
-  color: var(--text-primary) !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
   font-weight: 600 !important;
-  transition: var(--transition-fast) !important;
-  padding: 1rem !important;
+  padding: var(--spacing-md) !important;
 }
 
 .streamlit-expanderHeader:hover {
-  border-color: var(--accent-blue) !important;
-  background: var(--accent-blue) !important;
-  color: white !important;
+  border-color: var(--primary-blue) !important;
+  background: rgba(31, 119, 180, 0.1) !important;
 }
 
 .streamlit-expanderContent {
-  background: var(--bg-primary) !important;
-  border: 2px solid var(--border-color) !important;
+  background: white !important;
+  border: 1px solid #e2e8f0 !important;
   border-top: none !important;
   border-radius: 0 0 var(--border-radius) var(--border-radius) !important;
-  padding: 1.5rem !important;
-  color: var(--text-primary) !important;
+  padding: var(--spacing-lg) !important;
+  color: #374151 !important;
 }
 
-/* ============= CHATBOT ESPECÍFICO ============= */
-.chat-container {
-  background: var(--bg-secondary) !important;
-  border: 2px solid var(--border-color) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1rem !important;
-  margin: 1rem 0 !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-}
-
+/* ============= CHAT (CHATBOT) ============= */
 .chat-message {
-  background: var(--bg-primary) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 8px !important;
-  padding: 1rem !important;
-  margin: 0.5rem 0 !important;
-  color: var(--text-primary) !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: var(--border-radius) !important;
+  padding: var(--spacing-md) !important;
+  margin: var(--spacing-sm) 0 !important;
+  color: #374151 !important;
+  box-shadow: var(--light-shadow) !important;
 }
 
 .chat-message.user {
-  background: var(--accent-blue) !important;
+  background: var(--primary-blue) !important;
   color: white !important;
   margin-left: 2rem !important;
+  border-color: var(--primary-blue) !important;
 }
 
 .chat-message.assistant {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
+  background: #f9fafb !important;
+  color: #374151 !important;
   margin-right: 2rem !important;
-}
-
-.chat-input {
-  background: var(--bg-primary) !important;
-  border: 2px solid var(--border-color) !important;
-  border-radius: 8px !important;
-  color: var(--text-primary) !important;
-  padding: 0.8rem !important;
-  width: 100% !important;
-}
-
-/* ============= NUBANK ESPECÍFICO ============= */
-.nubank-mode-indicator {
-  background: linear-gradient(135deg, var(--accent-nubank), rgba(139, 47, 255, 0.1)) !important;
-  border: 2px solid var(--accent-nubank) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1.5rem !important;
-  margin: 1rem 0 !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 20px var(--shadow-color) !important;
-}
-
-.nubank-mode-indicator h4 {
-  color: var(--text-primary) !important;
-  font-weight: 700 !important;
-  margin-bottom: 0.5rem !important;
-}
-
-.establishment-card {
-  background: var(--bg-secondary) !important;
-  border: 2px solid var(--border-color) !important;
-  border-radius: var(--border-radius) !important;
-  padding: 1.2rem !important;
-  margin: 0.8rem 0 !important;
-  transition: var(--transition-normal) !important;
-  box-shadow: 0 4px 16px var(--shadow-color) !important;
-  color: var(--text-primary) !important;
-}
-
-.establishment-card:hover {
-  border-color: var(--accent-nubank) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 24px var(--shadow-hover) !important;
 }
 
 /* ============= SCROLLBAR PERSONALIZADA ============= */
@@ -564,25 +407,24 @@ small, .small {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: #f1f5f9;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-blue);
+  background: var(--primary-blue);
   border-radius: 4px;
-  transition: var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-purple);
+  background: #1e40af;
 }
 
 /* ============= RESPONSIVIDADE ============= */
 @media (max-width: 768px) {
   .main-header {
-    padding: 1.5rem 1rem !important;
-    margin-bottom: 1.5rem !important;
+    padding: var(--spacing-lg) var(--spacing-md) !important;
+    margin-bottom: var(--spacing-md) !important;
   }
   
   .main-header h1 {
@@ -590,34 +432,41 @@ small, .small {
   }
   
   [data-testid="metric-container"] {
-    padding: 1rem !important;
-    margin: 0.5rem 0 !important;
+    padding: var(--spacing-md) !important;
+    margin: var(--spacing-sm) 0 !important;
   }
   
   .stButton > button {
-    padding: 0.6rem 1.5rem !important;
+    padding: 0.625rem 1.25rem !important;
     font-size: 0.9rem !important;
-  }
-  
-  .nav-menu {
-    margin: 0.5rem 0 !important;
-    padding: 0.8rem !important;
   }
 }
 
-/* ============= UTILITÁRIOS DE COR ============= */
-.text-primary { color: var(--text-primary) !important; }
-.text-secondary { color: var(--text-secondary) !important; }
-.text-muted { color: var(--text-muted) !important; }
-.text-success { color: var(--accent-green) !important; }
-.text-danger { color: var(--accent-red) !important; }
-.text-warning { color: var(--accent-orange) !important; }
-.text-info { color: var(--accent-blue) !important; }
-.text-nubank { color: var(--accent-nubank) !important; }
+/* ============= UTILITÁRIOS ============= */
+.text-center { text-align: center !important; }
+.text-left { text-align: left !important; }
+.text-right { text-align: right !important; }
 
-.bg-primary { background-color: var(--bg-primary) !important; }
-.bg-secondary { background-color: var(--bg-secondary) !important; }
-.bg-tertiary { background-color: var(--bg-tertiary) !important; }
+.font-bold { font-weight: 700 !important; }
+.font-semibold { font-weight: 600 !important; }
+.font-medium { font-weight: 500 !important; }
+
+.text-sm { font-size: 0.875rem !important; }
+.text-lg { font-size: 1.125rem !important; }
+.text-xl { font-size: 1.25rem !important; }
+
+/* ============= CORES DE UTILIDADE ============= */
+.text-primary { color: var(--primary-blue) !important; }
+.text-success { color: var(--success-green) !important; }
+.text-warning { color: var(--warning-orange) !important; }
+.text-danger { color: var(--danger-red) !important; }
+.text-purple { color: var(--purple-accent) !important; }
+.text-nubank { color: var(--nubank-purple) !important; }
+
+.bg-primary { background-color: var(--primary-blue) !important; }
+.bg-success { background-color: var(--success-green) !important; }
+.bg-warning { background-color: var(--warning-orange) !important; }
+.bg-danger { background-color: var(--danger-red) !important; }
 
 /* ============= ANIMAÇÕES SUAVES ============= */
 @keyframes fadeInUp {
@@ -642,45 +491,78 @@ small, .small {
   }
 }
 
-.animate-fade-in {
-  animation: fadeInUp 0.6s ease-out !important;
+.animate-fade-in { animation: fadeInUp 0.6s ease-out !important; }
+.animate-slide-in { animation: slideInRight 0.5s ease-out !important; }
+
+/* ============= GARANTIA DE LEGIBILIDADE ============= */
+/* Forçar cores para elementos críticos */
+.stApp .stMarkdown h1,
+.stApp .stMarkdown h2,
+.stApp .stMarkdown h3,
+.stApp .stMarkdown h4,
+.stApp .stMarkdown h5,
+.stApp .stMarkdown h6 {
+  color: #1e293b !important;
 }
 
-.animate-slide-in {
-  animation: slideInRight 0.5s ease-out !important;
-}
-
-/* ============= GARANTIA DE VISIBILIDADE TOTAL ============= */
-/* Override para qualquer elemento que possa ter cor fixa */
-.stApp * {
-  transition: color 0.3s ease, background-color 0.3s ease !important;
-}
-
-/* Garantir que markdown seja sempre legível */
-.stMarkdown p, .stMarkdown div, .stMarkdown span,
-.stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
-.stMarkdown h4, .stMarkdown h5, .stMarkdown h6,
-.stMarkdown li, .stMarkdown ul, .stMarkdown ol {
-  color: var(--text-primary) !important;
-  background-color: transparent !important;
+.stApp .stMarkdown p,
+.stApp .stMarkdown div,
+.stApp .stMarkdown span,
+.stApp .stMarkdown li {
+  color: #374151 !important;
 }
 
 /* Links sempre visíveis */
-.stMarkdown a, a {
-  color: var(--accent-blue) !important;
+.stApp .stMarkdown a {
+  color: var(--primary-blue) !important;
   text-decoration: underline !important;
 }
 
-.stMarkdown a:hover, a:hover {
-  color: var(--accent-purple) !important;
+.stApp .stMarkdown a:hover {
+  color: #1e40af !important;
 }
 
-/* Códigos sempre legíveis */
-.stMarkdown code, code,
-.stMarkdown pre, pre {
-  background: var(--bg-tertiary) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-color) !important;
+/* Código sempre legível */
+.stApp .stMarkdown code {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
   border-radius: 4px !important;
-  padding: 0.2rem 0.4rem !important;
+  padding: 0.125rem 0.25rem !important;
+}
+
+.stApp .stMarkdown pre {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--border-radius) !important;
+  color: #1e293b !important;
+}
+
+/* ============= OVERRIDE STREAMLIT DARK MODE ============= */
+/* Garantir que elementos críticos sejam sempre legíveis */
+[data-theme="dark"] .stApp,
+[data-theme="dark"] .stApp .stMarkdown,
+[data-theme="dark"] .stApp .stMarkdown * {
+  background-color: transparent !important;
+}
+
+/* Manter métricas sempre legíveis */
+[data-theme="dark"] [data-testid="metric-container"] {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="dark"] [data-testid="metric-container"] label {
+  color: #374151 !important;
+}
+
+[data-theme="dark"] [data-testid="metric-value"] {
+  color: #111827 !important;
+}
+
+/* Tabelas sempre com fundo branco */
+[data-theme="dark"] .stDataFrame,
+[data-theme="dark"] .stDataFrame table,
+[data-theme="dark"] .stDataFrame tbody td {
+  background: white !important;
+  color: #374151 !important;
 }

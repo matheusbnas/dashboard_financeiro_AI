@@ -39,7 +39,7 @@ st.set_page_config(
     }
 )
 
-# Carregar CSS personalizado
+# Carregar CSS personalizado simplificado
 try:
     with open('css/dashboard_styles.css', 'r', encoding='utf-8') as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -47,98 +47,271 @@ except FileNotFoundError:
     # CSS básico inline se arquivo não existir
     st.markdown("""
     <style>
+    /* CSS Básico para garantir legibilidade */
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
-        border-radius: 12px;
+        background: linear-gradient(135deg, #1f77b4, #9467bd);
         color: white;
-        margin-bottom: 2rem;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     }
     
-    .nav-menu {
-        background: var(--bg-secondary, #f8f9fa);
-        border-radius: 12px;
+    .main-header h1, .main-header p {
+        color: white !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+    .google-sheets-section {
+        background: rgba(46, 160, 67, 0.1);
+        border: 2px solid #2ca02c;
+        border-radius: 8px;
         padding: 1rem;
         margin: 1rem 0;
-        border: 2px solid var(--border-color, #dee2e6);
-    }
-    
-    .nav-button {
-        display: block;
-        width: 100%;
-        padding: 0.75rem 1rem;
-        margin: 0.25rem 0;
-        background: var(--bg-primary, white);
-        color: var(--text-primary, #212529);
-        border: 1px solid var(--border-color, #dee2e6);
-        border-radius: 8px;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        cursor: pointer;
-    }
-    
-    .nav-button:hover {
-        background: var(--accent-blue, #0066cc);
-        color: white;
-        transform: translateY(-1px);
     }
     
     .google-sheets-button {
-        background: linear-gradient(135deg, #34a853 0%, #4caf50 100%);
+        background: linear-gradient(135deg, #2ca02c, #16a34a);
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 1rem 2rem;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
         font-weight: 600;
         font-size: 1.1rem;
-        box-shadow: 0 4px 20px rgba(52, 168, 83, 0.3);
         cursor: pointer;
         width: 100%;
-        margin: 1rem 0;
+        margin: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .google-sheets-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(46, 160, 67, 0.3);
     }
     
     .nubank-mode-indicator {
-        background: linear-gradient(135deg, #8b2fff 0%, #a855f7 100%);
-        border: 2px solid #8b2fff;
-        border-radius: 12px;
+        background: linear-gradient(135deg, #8a2be2, rgba(138, 43, 226, 0.1));
+        border: 2px solid #8a2be2;
+        border-radius: 8px;
         padding: 1.5rem;
         margin: 1rem 0;
         color: white;
-        box-shadow: 0 4px 20px rgba(139, 47, 255, 0.3);
     }
     
-    @media (prefers-color-scheme: dark) {
-        .nav-menu {
-            background: #161b22;
-            border-color: #30363d;
-        }
-        
-        .nav-button {
-            background: #0d1117;
-            color: #f0f6fc;
-            border-color: #30363d;
-        }
+    /* Garantir que métricas sejam sempre legíveis */
+    [data-testid="metric-container"] {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        padding: 1rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    [data-testid="metric-container"] label {
+        color: #374151 !important;
+        font-weight: 600;
+    }
+    
+    [data-testid="metric-value"] {
+        color: #111827 !important;
+        font-weight: 700;
+    }
+    
+    /* Botões sempre visíveis */
+    .stButton > button {
+        background: linear-gradient(135deg, #1f77b4, #1e40af) !important;
+        color: white !important;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(31, 119, 180, 0.3);
     }
     </style>
     """, unsafe_allow_html=True)
 
+def render_google_sheets_section():
+    """Renderiza seção dedicada do Google Sheets no sidebar"""
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### ☁️ Google Sheets Avançado")
+    
+    # Status da configuração
+    credentials_exist = os.path.exists('credentials/google_credentials.json')
+    env_configured = os.path.exists('.env')
+    
+    if credentials_exist:
+        st.sidebar.success("✅ Credenciais configuradas")
+    else:
+        st.sidebar.error("❌ Credenciais não encontradas")
+    
+    # Informações dos emails
+    st.sidebar.markdown("""
+    **📧 Emails configurados:**
+    - `matheusbnas@gmail.com`
+    - `dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com`
+    """)
+    
+    # Botão principal do Google Sheets
+    if st.sidebar.button(
+        "🚀 Criar Planilhas Automáticas",
+        help="Cria planilhas organizadas por ano/mês no Google Sheets",
+        key="google_sheets_main",
+        use_container_width=True
+    ):
+        if not credentials_exist:
+            st.sidebar.error("❌ Configure as credenciais primeiro!")
+            st.sidebar.info("""
+            **Como configurar:**
+            1. Acesse [Google Cloud Console](https://console.cloud.google.com/)
+            2. Habilite Google Sheets API + Drive API
+            3. Crie Service Account
+            4. Baixe JSON para `credentials/`
+            """)
+        else:
+            execute_google_sheets_advanced()
+    
+    # Botão para abrir Google Sheets diretamente
+    if st.sidebar.button(
+        "📊 Abrir Google Sheets",
+        help="Abrir Google Sheets no navegador",
+        key="open_sheets",
+        use_container_width=True
+    ):
+        webbrowser.open("https://docs.google.com/spreadsheets/")
+        st.sidebar.success("🌐 Google Sheets aberto no navegador!")
+    
+    # Link para configuração
+    if st.sidebar.button(
+        "⚙️ Como Configurar APIs",
+        help="Guia de configuração do Google Sheets",
+        key="config_help",
+        use_container_width=True
+    ):
+        show_google_sheets_config_help()
+
+def execute_google_sheets_advanced():
+    """Executa Google Sheets avançado"""
+    st.sidebar.info("🚀 Iniciando sincronização avançada...")
+    
+    try:
+        # Carregar dados primeiro
+        df, loaded_files, is_nubank_data = load_csv_files()
+        
+        if df.empty:
+            st.sidebar.error("❌ Nenhum dado encontrado para sincronizar!")
+            return
+        
+        # Processar dados
+        df = process_financial_data(df, is_nubank_data)
+        
+        if df.empty:
+            st.sidebar.error("❌ Erro ao processar dados!")
+            return
+        
+        # Executar sincronização
+        with st.spinner("📤 Criando planilhas organizadas..."):
+            if GOOGLE_SHEETS_AVAILABLE:
+                # Usar módulo direto
+                try:
+                    sync = GoogleSheetsSync()
+                    if sync.client:
+                        # Criar planilha principal
+                        spreadsheet_name = f"Dashboard Financeiro {datetime.now().year}"
+                        success = sync.create_or_open_spreadsheet(spreadsheet_name)
+                        
+                        if success:
+                            # Upload dados principais
+                            sync.upload_dataframe(df, f"Dados_Completos_{datetime.now().strftime('%Y_%m')}")
+                            
+                            # Criar resumos
+                            sync.create_summary_sheets(df)
+                            
+                            st.sidebar.success("✅ Planilhas criadas com sucesso!")
+                            st.sidebar.balloons()
+                            
+                            # Mostrar estatísticas
+                            st.sidebar.markdown(f"""
+                            **📊 Sincronizado:**
+                            - {len(df):,} transações
+                            - Período: {df['Data'].min().date()} até {df['Data'].max().date()}
+                            - Planilha: {spreadsheet_name}
+                            """)
+                        else:
+                            st.sidebar.error("❌ Falha ao criar planilha")
+                    else:
+                        st.sidebar.error("❌ Falha na conexão com Google Sheets")
+                        
+                except Exception as e:
+                    st.sidebar.error(f"❌ Erro na sincronização: {str(e)}")
+            else:
+                # Usar processo separado
+                result = subprocess.run([
+                    sys.executable, "src/google_sheets_sync.py"
+                ], capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    st.sidebar.success("✅ Sincronização concluída!")
+                    st.sidebar.balloons()
+                else:
+                    st.sidebar.error(f"❌ Erro: {result.stderr}")
+                    
+    except Exception as e:
+        st.sidebar.error(f"❌ Erro geral: {str(e)}")
+        st.sidebar.info("💡 Verifique se os módulos estão configurados corretamente")
+
+def show_google_sheets_config_help():
+    """Mostra ajuda para configuração do Google Sheets"""
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📋 Configuração Google Sheets API")
+    
+    with st.sidebar.expander("🔧 Passo a Passo", expanded=True):
+        st.markdown("""
+        **1. Google Cloud Console:**
+        - Acesse: [console.cloud.google.com](https://console.cloud.google.com/)
+        - Crie projeto ou selecione existente
+        
+        **2. Habilitar APIs:**
+        - Google Sheets API
+        - Google Drive API
+        
+        **3. Criar Service Account:**
+        - APIs & Services → Credentials
+        - Create Credentials → Service Account
+        - Baixe o arquivo JSON
+        
+        **4. Configurar arquivo:**
+        - Renomeie para: `google_credentials.json`
+        - Salve em: `credentials/`
+        
+        **5. Arquivo .env:**
+        ```
+        GOOGLE_CREDENTIALS_PATH=credentials/google_credentials.json
+        SPREADSHEET_NAME=Dashboard Financeiro Pessoal
+        ```
+        
+        **6. Emails de acesso:**
+        - matheusbnas@gmail.com
+        - dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com
+        """)
+
 def render_navigation_menu():
     """Renderiza menu de navegação no sidebar"""
-    st.sidebar.markdown("""
-    <div class="nav-menu">
-        <h3>🧭 Navegação</h3>
-    </div>
-    """, unsafe_allow_html=True)
+    st.sidebar.markdown("### 🧭 Navegação Rápida")
     
     # Opções de navegação
     nav_options = {
         "📊 Dashboard Principal": "dashboard",
         "🤖 Assistente IA": "chatbot", 
         "🚀 Menu Principal": "main",
-        "📈 Análise Avançada": "analytics",
-        "☁️ Google Sheets": "sheets"
+        "📈 Análise Avançada": "analytics"
     }
     
     # Estado atual da navegação
@@ -147,8 +320,6 @@ def render_navigation_menu():
     
     # Criar botões de navegação
     for label, page_key in nav_options.items():
-        is_current = st.session_state.current_page == page_key
-        
         if st.sidebar.button(
             label, 
             key=f"nav_{page_key}",
@@ -169,171 +340,9 @@ def render_navigation_menu():
                     st.sidebar.success("📈 Análise Avançada iniciada!")
                 except Exception as e:
                     st.sidebar.error(f"Erro ao iniciar análise: {e}")
-            elif page_key == "sheets":
-                # Executar Google Sheets sync
-                st.session_state.current_page = "sheets"
-                st.rerun()
             else:
                 st.session_state.current_page = page_key
                 st.rerun()
-    
-    st.sidebar.markdown("---")
-
-def render_google_sheets_integration():
-    """Renderiza integração com Google Sheets"""
-    st.title("☁️ Integração Google Sheets")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("""
-        ### 📊 Sincronização Automática
-        
-        Crie automaticamente planilhas organizadas no Google Sheets com:
-        
-        ✅ **Dados Completos** - Todas as transações organizadas  
-        ✅ **Resumo Mensal** - Receitas, despesas e saldo por mês  
-        ✅ **Análise por Categoria** - Total e média por tipo de gasto  
-        ✅ **Custos Fixos vs Variáveis** - Análise temporal dos custos  
-        ✅ **Top 50 Gastos** - Maiores transações do período  
-        
-        ### 🔗 Acesso Direto
-        
-        Após a sincronização, você terá acesso direto às planilhas organizadas por ano e mês.
-        """)
-    
-    with col2:
-        st.markdown("### ⚙️ Configuração")
-        
-        # Verificar se Google Sheets está configurado
-        credentials_exist = os.path.exists('credentials/google_credentials.json')
-        env_configured = os.path.exists('.env')
-        
-        if credentials_exist:
-            st.success("✅ Credenciais configuradas")
-        else:
-            st.error("❌ Credenciais não encontradas")
-            st.markdown("""
-            **Como configurar:**
-            1. Acesse [Google Cloud Console](https://console.cloud.google.com/)
-            2. Habilite Google Sheets API
-            3. Crie Service Account
-            4. Baixe JSON para `credentials/`
-            """)
-        
-        if env_configured:
-            st.success("✅ Arquivo .env encontrado")
-        else:
-            st.warning("⚠️ Configure arquivo .env")
-    
-    st.markdown("---")
-    
-    # Seção de ação
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("🚀 Sincronizar Agora", help="Sincronizar dados com Google Sheets"):
-            if not credentials_exist:
-                st.error("❌ Configure as credenciais primeiro!")
-                return
-            
-            try:
-                with st.spinner("📤 Sincronizando com Google Sheets..."):
-                    # Executar sincronização
-                    if GOOGLE_SHEETS_AVAILABLE:
-                        quick_sync()
-                        st.success("✅ Sincronização concluída!")
-                        st.balloons()
-                    else:
-                        # Executar como processo separado
-                        result = subprocess.run([
-                            sys.executable, "src/google_sheets_sync.py"
-                        ], capture_output=True, text=True)
-                        
-                        if result.returncode == 0:
-                            st.success("✅ Sincronização concluída!")
-                            st.balloons()
-                        else:
-                            st.error(f"❌ Erro na sincronização: {result.stderr}")
-                            
-            except Exception as e:
-                st.error(f"❌ Erro: {e}")
-                st.error("Verifique se os módulos estão em src/ e as credenciais estão configuradas.")
-    
-    with col2:
-        # Botão para abrir Google Sheets diretamente
-        if st.button("📊 Abrir Google Sheets", help="Abrir Google Sheets no navegador"):
-            sheets_url = "https://docs.google.com/spreadsheets/"
-            webbrowser.open(sheets_url)
-            st.success("🌐 Google Sheets aberto no navegador!")
-    
-    with col3:
-        if st.button("⚙️ Configurar APIs", help="Guia de configuração"):
-            st.info("""
-            **Configuração rápida:**
-            
-            1. **Google Cloud Console**:
-               - Habilite Google Sheets API
-               - Crie Service Account  
-               - Baixe credenciais JSON
-            
-            2. **Arquivo .env**:
-               ```
-               GOOGLE_CREDENTIALS_PATH=credentials/google_credentials.json
-               SPREADSHEET_NAME=Dashboard Financeiro Pessoal
-               ```
-            
-            3. **Emails de acesso**:
-               - dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com
-               - matheusbnas@gmail.com
-            """)
-    
-    # Status da última sincronização
-    st.markdown("### 📅 Histórico de Sincronização")
-    
-    # Verificar se há dados para sincronizar
-    csv_files = glob.glob("*.csv") + glob.glob("data/raw/*.csv") + glob.glob("Nubank_*.csv")
-    
-    if csv_files:
-        st.success(f"📄 {len(csv_files)} arquivo(s) CSV encontrado(s) e pronto(s) para sincronização")
-        
-        # Mostrar preview dos dados
-        with st.expander("👀 Preview dos Dados"):
-            try:
-                # Carregar primeiro arquivo como exemplo
-                sample_file = csv_files[0]
-                df_sample = pd.read_csv(sample_file)
-                
-                st.write(f"**Arquivo:** {os.path.basename(sample_file)}")
-                st.write(f"**Transações:** {len(df_sample):,}")
-                st.write(f"**Colunas:** {', '.join(df_sample.columns)}")
-                
-                # Verificar se é formato Nubank
-                is_nubank = all(col in df_sample.columns for col in ['date', 'title', 'amount'])
-                if is_nubank:
-                    st.success("💳 Formato Nubank detectado - Análise otimizada!")
-                
-                st.dataframe(df_sample.head(3), use_container_width=True)
-                
-            except Exception as e:
-                st.error(f"Erro ao ler arquivo: {e}")
-    else:
-        st.warning("⚠️ Nenhum arquivo CSV encontrado para sincronizar")
-        st.info("Coloque seus extratos do Nubank nas pastas: atual, data/raw/ ou extratos/")
-    
-    # Informações de contato
-    st.markdown("---")
-    st.markdown("""
-    ### 📧 Configuração de Email
-    
-    **Service Account configurado:**  
-    `dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com`
-    
-    **Email pessoal:**  
-    `matheusbnas@gmail.com`
-    
-    Certifique-se de que ambos os emails tenham acesso às planilhas criadas.
-    """)
 
 def detect_nubank_format(df):
     """Detecta se o CSV é do formato Nubank (date, title, amount)"""
@@ -1186,6 +1195,9 @@ def main():
     # Renderizar menu de navegação
     render_navigation_menu()
     
+    # Renderizar seção Google Sheets
+    render_google_sheets_section()
+    
     # Roteamento baseado na página atual
     if st.session_state.current_page == 'chatbot':
         if CHATBOT_AVAILABLE:
@@ -1200,30 +1212,20 @@ def main():
                 st.rerun()
         return
     
-    elif st.session_state.current_page == 'sheets':
-        render_google_sheets_integration()
-        return
-    
     # Página principal do dashboard
     st.session_state.current_page = 'dashboard'
     
     # Header principal
     st.markdown("""
     <div class="main-header">
-        <h1>💰 Dashboard Financeiro Avançado</h1>
-        <p>Análise Completa e Inteligente dos seus Gastos Pessoais</p>
+        <h1>💰 Dashboard Financeiro Avançado v5.0</h1>
+        <p>Análise Completa e Inteligente dos seus Gastos Pessoais com IA Integrada</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Sidebar para configurações
     st.sidebar.title("⚙️ Configurações")
     st.sidebar.markdown("### 📁 Status dos Arquivos")
-    
-    # Botão especial para Google Sheets no sidebar
-    st.sidebar.markdown("### ☁️ Google Sheets")
-    if st.sidebar.button("📊 Criar Planilhas Automáticas", help="Sincronizar e criar planilhas organizadas no Google Sheets"):
-        st.session_state.current_page = 'sheets'
-        st.rerun()
     
     # Carregar dados
     with st.spinner("🔄 Carregando dados..."):
@@ -1291,6 +1293,7 @@ def main():
             <li>💡 <strong>Categorização inteligente</strong> - Baseada em padrões do Nubank</li>
             <li>📊 <strong>Controle de gastos</strong> - Comparação entre períodos</li>
             <li>🤖 <strong>Assistente IA</strong> - Chat inteligente sobre seus gastos</li>
+            <li>☁️ <strong>Google Sheets Avançado</strong> - Planilhas organizadas automaticamente</li>
         </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -1316,7 +1319,7 @@ def main():
     
     if is_nubank_data:
         st.sidebar.markdown("""
-        <div style="background: linear-gradient(135deg, #8b2fff 0%, #a855f7 100%); padding: 1rem; border-radius: 8px; margin: 1rem 0; color: white;">
+        <div style="background: linear-gradient(135deg, #8a2be2 0%, rgba(138, 43, 226, 0.1) 100%); padding: 1rem; border-radius: 8px; margin: 1rem 0; color: white;">
         <h4>💳 Modo Nubank Ativo</h4>
         <p><strong>Características:</strong></p>
         <ul>
@@ -1324,6 +1327,7 @@ def main():
             <li>✅ Análise de estabelecimentos</li>
             <li>✅ Frequência de uso por local</li>
             <li>✅ Categorização otimizada</li>
+            <li>✅ Google Sheets automático</li>
         </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -1627,11 +1631,11 @@ def main():
     # Footer
     footer_text = "💳 Dashboard Nubank" if is_nubank_data else "💰 Dashboard Financeiro"
     st.markdown(f"""
-    <div class="footer">
-        <h3>{footer_text}</h3>
+    <div style="text-align: center; padding: 2rem; margin-top: 2rem; border-top: 1px solid #e5e7eb;">
+        <h3>{footer_text} v5.0</h3>
         <p>Análise completa e inteligente dos seus dados financeiros | 🔒 Dados processados localmente</p>
-        <p>Versão 5.0 - Otimizada para dados Nubank com IA integrada</p>
-        <p>🤖 Assistente IA | ☁️ Google Sheets | 📈 Análise Avançada</p>
+        <p>🤖 Assistente IA | ☁️ Google Sheets Avançado | 📈 Análise Completa</p>
+        <p><strong>📧 Suporte:</strong> matheusbnas@gmail.com | <strong>🤖 Service Account:</strong> dashboard-financeiro@api-financeiro-460817.iam.gserviceaccount.com</p>
     </div>
     """, unsafe_allow_html=True)
 
