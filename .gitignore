@@ -1,6 +1,5 @@
 # Dados sensiveis
 .env
-data/raw/*.csv
 credentials/
 *.json
 .venv/
